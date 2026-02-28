@@ -1,1 +1,7 @@
 project_id = "swjgwxrcofunnvshzlip"
+
+[functions.amber-ai]
+verify_jwt = false
+
+[functions.miraco-lly-ai]
+verify_jwt = false

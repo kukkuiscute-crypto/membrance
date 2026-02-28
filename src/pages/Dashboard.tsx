@@ -7,31 +7,40 @@ import Workstation from "@/components/Workstation";
 import FlashcardsPage from "@/pages/Flashcards";
 import OlympiadsPage from "@/pages/Olympiads";
 import LiveClassesPage from "@/pages/LiveClasses";
+import SettingsPage from "@/pages/Settings";
+import RankingsPage from "@/pages/Rankings";
+import TrinityPanel from "@/components/TrinityPanel";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Menu } from "lucide-react";
 
 const Dashboard = () => {
-  const [score, setScore] = useState(() => {
-    const saved = localStorage.getItem("membrance_xp");
-    return saved ? parseInt(saved) : 0;
-  });
+  const { user, isGuest, profile } = useAuth();
+  const points = profile?.points ?? (isGuest ? 0 : 10);
+
   const [justAdded, setJustAdded] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const addXP = useCallback((amount: number) => {
-    setScore((prev) => {
-      const newScore = prev + amount;
-      localStorage.setItem("membrance_xp", String(newScore));
-      return newScore;
-    });
+  const addPoints = useCallback(async (amount: number) => {
+    if (user && !isGuest) {
+      // Update in DB
+      const { data } = await supabase
+        .from("profiles")
+        .select("points")
+        .eq("user_id", user.id)
+        .single();
+      if (data) {
+        await supabase
+          .from("profiles")
+          .update({ points: (data.points || 0) + amount })
+          .eq("user_id", user.id);
+      }
+    }
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1000);
-  }, []);
+  }, [user, isGuest]);
 
-  const handleFinishLesson = useCallback(() => addXP(10), [addXP]);
-
-  const level = Math.floor(score / 1000) + 1;
-  const xpInLevel = score % 1000;
-  const xpProgress = (xpInLevel / 1000) * 100;
+  const handleFinishLesson = useCallback(() => addPoints(10), [addPoints]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden relative">
@@ -56,17 +65,7 @@ const Dashboard = () => {
             <span className="text-sm text-muted-foreground">Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
-            {/* Level indicator */}
-            <div className="hidden sm:flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Lv.{level}</span>
-              <div className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all duration-500"
-                  style={{ width: `${xpProgress}%` }}
-                />
-              </div>
-            </div>
-            <ScoreDisplay score={score} justAdded={justAdded} />
+            <ScoreDisplay score={points} justAdded={justAdded} />
           </div>
         </header>
 
@@ -74,13 +73,18 @@ const Dashboard = () => {
         <main className="flex-1 overflow-y-auto">
           <Routes>
             <Route index element={<Workstation onFinishLesson={handleFinishLesson} />} />
-            <Route path="flashcards" element={<FlashcardsPage onFlip={() => addXP(5)} onMaster={() => addXP(20)} />} />
+            <Route path="flashcards" element={<FlashcardsPage onFlip={() => addPoints(5)} onMaster={() => addPoints(20)} />} />
             <Route path="olympiads" element={<OlympiadsPage />} />
             <Route path="live" element={<LiveClassesPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="rankings" element={<RankingsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>
+
+      {/* Trinity Panel */}
+      <TrinityPanel />
     </div>
   );
 };
