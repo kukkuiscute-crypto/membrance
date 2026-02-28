@@ -22,9 +22,15 @@ export type Database = {
           grade: string | null
           id: string
           level: number
+          points: number
+          rank: string
+          rank_level: number
+          theme: string
           updated_at: string
           user_id: string
           user_type: string | null
+          username: string | null
+          username_changed_at: string | null
           xp: number
         }
         Insert: {
@@ -34,9 +40,15 @@ export type Database = {
           grade?: string | null
           id?: string
           level?: number
+          points?: number
+          rank?: string
+          rank_level?: number
+          theme?: string
           updated_at?: string
           user_id: string
           user_type?: string | null
+          username?: string | null
+          username_changed_at?: string | null
           xp?: number
         }
         Update: {
@@ -46,9 +58,15 @@ export type Database = {
           grade?: string | null
           id?: string
           level?: number
+          points?: number
+          rank?: string
+          rank_level?: number
+          theme?: string
           updated_at?: string
           user_id?: string
           user_type?: string | null
+          username?: string | null
+          username_changed_at?: string | null
           xp?: number
         }
         Relationships: []

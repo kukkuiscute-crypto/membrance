@@ -1,13 +1,16 @@
 import { motion } from "framer-motion";
-import { Layers, Trophy, Video, BookOpen, BarChart3, Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { Layers, Trophy, Video, BookOpen, BarChart3, Settings, ChevronLeft, ChevronRight, Shield } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import RankBadge from "@/components/RankBadge";
 
 const navItems = [
+  { icon: BookOpen, label: "Workstation", path: "/dashboard" },
   { icon: Layers, label: "Flashcards", path: "/dashboard/flashcards" },
   { icon: Trophy, label: "Olympiads", path: "/dashboard/olympiads", badge: "Soon" },
   { icon: Video, label: "Live Classes", path: "/dashboard/live", badge: "Soon" },
-  { icon: BookOpen, label: "Study Notes", path: "/dashboard" },
-  { icon: BarChart3, label: "Progress", path: "/dashboard" },
+  { icon: Shield, label: "Rankings", path: "/dashboard/rankings" },
+  { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
 interface DashboardSidebarProps {
@@ -18,15 +21,16 @@ interface DashboardSidebarProps {
 const DashboardSidebar = ({ collapsed, onToggle }: DashboardSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isGuest, profile } = useAuth();
 
   return (
     <aside
       className={`h-screen glass-strong flex flex-col py-6 border-r border-border/30 shrink-0 transition-all duration-300 ${
         collapsed ? "w-20 px-2" : "w-64 px-4"
-      }`}
+      } hidden md:flex`}
     >
       {/* Logo + Toggle */}
-      <div className={`flex items-center mb-8 ${collapsed ? "justify-center" : "justify-between px-2"}`}>
+      <div className={`flex items-center mb-6 ${collapsed ? "justify-center" : "justify-between px-2"}`}>
         {!collapsed && (
           <h1 className="font-display text-lg font-bold tracking-[0.25em] text-foreground glow-text">
             MEMBRANCE
@@ -40,12 +44,23 @@ const DashboardSidebar = ({ collapsed, onToggle }: DashboardSidebarProps) => {
         </button>
       </div>
 
-      {!collapsed && <div className="h-0.5 w-12 bg-primary/60 mb-6 rounded-full mx-2" />}
+      {!collapsed && <div className="h-0.5 w-12 bg-primary/60 mb-4 rounded-full mx-2" />}
+
+      {/* Rank badge — authenticated only */}
+      {!isGuest && user && profile && !collapsed && (
+        <div className="px-2 mb-4">
+          <RankBadge points={profile.points || 0} compact />
+        </div>
+      )}
 
       {/* Nav Items */}
       <nav className="flex-1 space-y-1">
         {navItems.map((item, i) => {
-          const isActive = location.pathname === item.path;
+          // Hide rankings for guests
+          if (item.path === "/dashboard/rankings" && (isGuest || !user)) return null;
+          const isActive = item.path === "/dashboard"
+            ? location.pathname === "/dashboard"
+            : location.pathname.startsWith(item.path);
           return (
             <motion.button
               key={item.label}
@@ -71,12 +86,6 @@ const DashboardSidebar = ({ collapsed, onToggle }: DashboardSidebarProps) => {
           );
         })}
       </nav>
-
-      {/* Bottom */}
-      <button className={`flex items-center gap-3 ${collapsed ? "justify-center px-2" : "px-4"} py-3 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/60`}>
-        <Settings className="w-5 h-5" />
-        {!collapsed && <span>Settings</span>}
-      </button>
     </aside>
   );
 };
