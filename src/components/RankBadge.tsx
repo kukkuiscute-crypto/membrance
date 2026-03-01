@@ -30,7 +30,7 @@ const RankBadge = ({ points, compact = false }: RankBadgeProps) => {
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`glass rounded-xl p-4 relative overflow-hidden ${info.isFutureSelf ? "animate-pulse-glow" : ""}`}
+      className={`glass rounded-xl p-4 relative overflow-hidden ${info.isFutureSelf ? "neon-border-animated" : ""}`}
       style={{ borderColor: `hsl(${info.color} / 0.4)`, borderWidth: info.isFutureSelf ? 2 : 1 }}
     >
       <div className="flex items-center gap-3 mb-3">

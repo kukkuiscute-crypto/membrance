@@ -42,12 +42,20 @@ export const useTheme = () => useContext(ThemeContext);
 function applyTheme(key: ThemeKey) {
   const t = THEMES.find((th) => th.key === key) || THEMES[0];
   const root = document.documentElement;
-  root.style.setProperty("--primary", t.hue);
-  root.style.setProperty("--accent", t.hue);
-  root.style.setProperty("--ring", t.hue);
-  root.style.setProperty("--glow", t.hue);
-  root.style.setProperty("--sidebar-primary", t.hue);
-  root.style.setProperty("--sidebar-ring", t.hue);
+  // Update ALL accent-related CSS variables dynamically
+  const vars = [
+    "--primary", "--accent", "--ring", "--glow",
+    "--sidebar-primary", "--sidebar-ring",
+    "--sidebar-accent",
+  ];
+  vars.forEach((v) => root.style.setProperty(v, t.hue));
+  // Sidebar accent needs lower lightness
+  const parts = t.hue.split(" ");
+  if (parts.length === 3) {
+    root.style.setProperty("--sidebar-accent", `${parts[0]} 40% 15%`);
+    root.style.setProperty("--sidebar-accent-foreground", `${parts[0]} 83% 80%`);
+    root.style.setProperty("--glow-muted", `${parts[0]} 60% 45%`);
+  }
 }
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {

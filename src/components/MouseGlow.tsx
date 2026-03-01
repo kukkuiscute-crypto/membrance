@@ -15,7 +15,7 @@ const MouseGlow = () => {
     <div
       className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-300"
       style={{
-        background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, hsl(262 83% 65% / 0.06), transparent 60%)`,
+        background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, hsl(var(--glow) / 0.06), transparent 60%)`,
       }}
     />
   );
