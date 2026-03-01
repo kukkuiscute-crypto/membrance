@@ -1,27 +1,29 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Grip, X, MessageSquare, FlaskConical, Calculator as CalcIcon } from "lucide-react";
+import { Grip, X, MessageSquare, FlaskConical, Calculator as CalcIcon, Briefcase, FileText } from "lucide-react";
 import AIChatPanel from "./AIChatPanel";
 import AdvancedCalculator from "./AdvancedCalculator";
 
-type Tab = "amber" | "miraco" | "calc";
+type Tab = "amber" | "miraco" | "calc" | "project" | "summarizer";
 
 const TrinityPanel = () => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("amber");
 
   const tabs: { key: Tab; label: string; icon: typeof MessageSquare }[] = [
-    { key: "amber", label: "AMBER AI", icon: MessageSquare },
-    { key: "miraco", label: "MIRACO-LLY", icon: FlaskConical },
-    { key: "calc", label: "Calculator", icon: CalcIcon },
+    { key: "amber", label: "AMBER", icon: MessageSquare },
+    { key: "miraco", label: "MIRACO", icon: FlaskConical },
+    { key: "calc", label: "Calc", icon: CalcIcon },
+    { key: "project", label: "Project", icon: Briefcase },
+    { key: "summarizer", label: "Summary", icon: FileText },
   ];
 
   return (
     <>
-      {/* Toggle button — three vertical lines */}
+      {/* Toggle — three vertical lines */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed right-3 top-1/2 -translate-y-1/2 z-50 p-2 rounded-lg glass-strong hover:bg-secondary/60 transition-all group"
+        className="fixed right-3 top-20 z-50 p-2 rounded-lg glass-strong hover:bg-secondary/60 transition-all group"
         title="AI Tools"
       >
         <Grip className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -50,7 +52,7 @@ const TrinityPanel = () => {
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-1 py-3 text-[10px] font-medium transition-all ${
                     tab === t.key
                       ? "text-primary border-b-2 border-primary bg-primary/5"
                       : "text-muted-foreground hover:text-foreground"
@@ -67,6 +69,10 @@ const TrinityPanel = () => {
               {tab === "amber" && <AIChatPanel functionName="amber-ai" placeholder="Ask AMBER about your homework..." />}
               {tab === "miraco" && <AIChatPanel functionName="miraco-lly-ai" placeholder="Ask MIRACO-LLY about experiments..." />}
               {tab === "calc" && <AdvancedCalculator />}
+              {tab === "project" && <AIChatPanel functionName="amber-ai" placeholder="Describe your project for step-by-step guidance..." />}
+              {tab === "summarizer" && (
+                <AIChatPanel functionName="amber-ai" placeholder="Paste a URL or describe content to summarize..." />
+              )}
             </div>
           </motion.div>
         )}

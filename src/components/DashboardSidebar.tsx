@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Layers, Trophy, Video, BookOpen, BarChart3, Settings, ChevronLeft, ChevronRight, Shield } from "lucide-react";
+import { Layers, Trophy, Video, BookOpen, BarChart3, Settings, ChevronLeft, ChevronRight, Shield, PlayCircle, StickyNote } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import RankBadge from "@/components/RankBadge";
@@ -7,9 +7,11 @@ import RankBadge from "@/components/RankBadge";
 const navItems = [
   { icon: BookOpen, label: "Workstation", path: "/dashboard" },
   { icon: Layers, label: "Flashcards", path: "/dashboard/flashcards" },
+  { icon: PlayCircle, label: "Video Hub", path: "/dashboard/videos" },
+  { icon: StickyNote, label: "Study Notes", path: "/dashboard/notes" },
   { icon: Trophy, label: "Olympiads", path: "/dashboard/olympiads", badge: "Soon" },
   { icon: Video, label: "Live Classes", path: "/dashboard/live", badge: "Soon" },
-  { icon: Shield, label: "Rankings", path: "/dashboard/rankings" },
+  { icon: Shield, label: "Rankings", path: "/dashboard/rankings", authOnly: true },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
@@ -56,8 +58,8 @@ const DashboardSidebar = ({ collapsed, onToggle }: DashboardSidebarProps) => {
       {/* Nav Items */}
       <nav className="flex-1 space-y-1">
         {navItems.map((item, i) => {
-          // Hide rankings for guests
-          if (item.path === "/dashboard/rankings" && (isGuest || !user)) return null;
+          // Hide auth-only items for guests
+          if ((item as any).authOnly && (isGuest || !user)) return null;
           const isActive = item.path === "/dashboard"
             ? location.pathname === "/dashboard"
             : location.pathname.startsWith(item.path);

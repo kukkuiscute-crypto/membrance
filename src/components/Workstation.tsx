@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Sparkles, BookOpen, Clock, ArrowRight, Layers, Trophy, Video } from "lucide-react";
+import { Sparkles, BookOpen, Clock, ArrowRight, Layers, Trophy, Video, PlayCircle, StickyNote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -65,11 +65,12 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-3 gap-4 max-w-2xl w-full mt-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl w-full mt-6">
         {[
           { label: "Flashcards", count: "Study Cards", icon: Layers, path: "/dashboard/flashcards" },
+          { label: "Video Hub", count: "Watch & Learn", icon: PlayCircle, path: "/dashboard/videos" },
+          { label: "Study Notes", count: "Your Desk", icon: StickyNote, path: "/dashboard/notes" },
           { label: "Olympiad Prep", count: "Coming Soon", icon: Trophy, path: "/dashboard/olympiads" },
-          { label: "Live Class", count: "Coming Soon", icon: Video, path: "/dashboard/live" },
         ].map((item, i) => (
           <motion.div
             key={item.label}

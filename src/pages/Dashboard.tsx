@@ -9,6 +9,8 @@ import OlympiadsPage from "@/pages/Olympiads";
 import LiveClassesPage from "@/pages/LiveClasses";
 import SettingsPage from "@/pages/Settings";
 import RankingsPage from "@/pages/Rankings";
+import VideoHubPage from "@/pages/VideoHub";
+import StudyNotesPage from "@/pages/StudyNotes";
 import TrinityPanel from "@/components/TrinityPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +25,6 @@ const Dashboard = () => {
 
   const addPoints = useCallback(async (amount: number) => {
     if (user && !isGuest) {
-      // Update in DB
       const { data } = await supabase
         .from("profiles")
         .select("points")
@@ -65,7 +66,8 @@ const Dashboard = () => {
             <span className="text-sm text-muted-foreground">Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
-            <ScoreDisplay score={points} justAdded={justAdded} />
+            {/* Only show score for authenticated users */}
+            {!isGuest && user && <ScoreDisplay score={points} justAdded={justAdded} />}
           </div>
         </header>
 
@@ -74,6 +76,8 @@ const Dashboard = () => {
           <Routes>
             <Route index element={<Workstation onFinishLesson={handleFinishLesson} />} />
             <Route path="flashcards" element={<FlashcardsPage onFlip={() => addPoints(5)} onMaster={() => addPoints(20)} />} />
+            <Route path="videos" element={<VideoHubPage />} />
+            <Route path="notes" element={<StudyNotesPage />} />
             <Route path="olympiads" element={<OlympiadsPage />} />
             <Route path="live" element={<LiveClassesPage />} />
             <Route path="settings" element={<SettingsPage />} />
