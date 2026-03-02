@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Palette, Save, Loader2, StickyNote, BookOpen } from "lucide-react";
+import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEMES, type ThemeKey } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const { user, isGuest, profile, refreshProfile } = useAuth();
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [saving, setSaving] = useState(false);
@@ -48,6 +50,13 @@ const Settings = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleLogout = async () => {
+    localStorage.removeItem("membrance_guest");
+    await supabase.auth.signOut();
+    navigate("/auth");
+    toast.success("Logged out successfully");
   };
 
   const toggleNoteView = (view: "sticky" | "book") => {
@@ -138,6 +147,15 @@ const Settings = () => {
             </button>
           ))}
         </div>
+      </motion.div>
+
+      {/* Log Out */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <button onClick={handleLogout}
+          className="flex items-center gap-2 w-full justify-center border border-destructive/40 text-destructive hover:bg-destructive/10 py-3 rounded-xl transition-all text-sm font-medium">
+          <LogOut className="w-4 h-4" />
+          {user ? "Log Out" : "Exit Guest Mode"}
+        </button>
       </motion.div>
     </div>
   );

@@ -11,7 +11,10 @@ export type ThemeKey =
   | "midnight-sunrise"
   | "midnight-glass"
   | "midnight-grey"
-  | "midnight-white";
+  | "midnight-white"
+  | "sakura-pink"
+  | "famous-indigo"
+  | "neon-mode";
 
 export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "midnight-dark", label: "Midnight Dark", hue: "262 83% 65%" },
@@ -25,6 +28,9 @@ export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "midnight-glass", label: "Midnight Glass", hue: "200 15% 55%" },
   { key: "midnight-grey", label: "Midnight Grey", hue: "0 0% 50%" },
   { key: "midnight-white", label: "Midnight White", hue: "0 0% 80%" },
+  { key: "sakura-pink", label: "Sakura Pink", hue: "330 70% 65%" },
+  { key: "famous-indigo", label: "Famous Indigo", hue: "240 70% 55%" },
+  { key: "neon-mode", label: "Neon Mode", hue: "120 100% 50%" },
 ];
 
 interface ThemeContextType {
@@ -42,19 +48,28 @@ export const useTheme = () => useContext(ThemeContext);
 function applyTheme(key: ThemeKey) {
   const t = THEMES.find((th) => th.key === key) || THEMES[0];
   const root = document.documentElement;
-  // Update ALL accent-related CSS variables dynamically
   const vars = [
     "--primary", "--accent", "--ring", "--glow",
     "--sidebar-primary", "--sidebar-ring",
-    "--sidebar-accent",
   ];
   vars.forEach((v) => root.style.setProperty(v, t.hue));
-  // Sidebar accent needs lower lightness
+
   const parts = t.hue.split(" ");
   if (parts.length === 3) {
     root.style.setProperty("--sidebar-accent", `${parts[0]} 40% 15%`);
     root.style.setProperty("--sidebar-accent-foreground", `${parts[0]} 83% 80%`);
     root.style.setProperty("--glow-muted", `${parts[0]} 60% 45%`);
+  }
+
+  // Neon mode: boost contrast
+  if (key === "neon-mode") {
+    root.style.setProperty("--background", "0 0% 2%");
+    root.style.setProperty("--card", "0 0% 4%");
+    root.style.setProperty("--border", "120 50% 20%");
+  } else {
+    root.style.setProperty("--background", "240 10% 3.9%");
+    root.style.setProperty("--card", "240 6% 6%");
+    root.style.setProperty("--border", "240 4% 16%");
   }
 }
 
