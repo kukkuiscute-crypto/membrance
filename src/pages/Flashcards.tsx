@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Upload, Trash2, RotateCcw, Pin, PinOff, Layers, ArrowLeft } from "lucide-react";
+import { Plus, Upload, Trash2, RotateCcw, Pin, PinOff, Layers, ArrowLeft, Users, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 interface Flashcard {
@@ -10,6 +10,7 @@ interface Flashcard {
   mastered: boolean;
   pinned: boolean;
   groupId?: string;
+  useCount: number;
 }
 
 interface CardGroup {
@@ -24,12 +25,22 @@ interface FlashcardsPageProps {
   onMaster: () => void;
 }
 
+// Community flashcards (mock data for social browsing)
+const COMMUNITY_CARDS = [
+  { id: "c1", author: "ScienceKid_92", question: "What is the mitochondria?", answer: "The powerhouse of the cell", subject: "Biology", grade: "Grade 9" },
+  { id: "c2", author: "MathWiz", question: "What is the Pythagorean theorem?", answer: "a² + b² = c²", subject: "Mathematics", grade: "Grade 8" },
+  { id: "c3", author: "HistoryBuff", question: "When did WW2 end?", answer: "September 2, 1945", subject: "History", grade: "Grade 10" },
+  { id: "c4", author: "ChemMaster", question: "Chemical formula for water?", answer: "H₂O", subject: "Chemistry", grade: "Grade 7" },
+  { id: "c5", author: "PhysicsFan", question: "Speed of light?", answer: "299,792,458 m/s", subject: "Physics", grade: "Grade 11" },
+  { id: "c6", author: "TeacherSmith", question: "What is photosynthesis?", answer: "Process by which plants convert light energy to chemical energy", subject: "Biology", grade: "Grade 8" },
+];
+
 const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
   const [cards, setCards] = useState<Flashcard[]>(() => {
     const saved = localStorage.getItem("membrance_flashcards");
     if (!saved) return [];
     const parsed = JSON.parse(saved);
-    return parsed.map((c: any) => ({ ...c, pinned: c.pinned ?? false }));
+    return parsed.map((c: any) => ({ ...c, pinned: c.pinned ?? false, useCount: c.useCount ?? 0 }));
   });
   const [groups, setGroups] = useState<CardGroup[]>(() => {
     const saved = localStorage.getItem("membrance_groups");
@@ -40,24 +51,19 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
   const [showGroupForm, setShowGroupForm] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-  const [view, setView] = useState<"all" | "pinned" | "groups">("all");
+  const [view, setView] = useState<"all" | "pinned" | "groups" | "community">("all");
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [groupQuestion, setGroupQuestion] = useState("");
   const [groupAnswer, setGroupAnswer] = useState("");
   const [groupSubCards, setGroupSubCards] = useState<string[]>(["", "", "", ""]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    localStorage.setItem("membrance_flashcards", JSON.stringify(cards));
-  }, [cards]);
-
-  useEffect(() => {
-    localStorage.setItem("membrance_groups", JSON.stringify(groups));
-  }, [groups]);
+  useEffect(() => { localStorage.setItem("membrance_flashcards", JSON.stringify(cards)); }, [cards]);
+  useEffect(() => { localStorage.setItem("membrance_groups", JSON.stringify(groups)); }, [groups]);
 
   const addCard = () => {
     if (!question.trim() || !answer.trim()) { toast.error("Both fields required"); return; }
-    setCards((prev) => [...prev, { id: crypto.randomUUID(), question, answer, mastered: false, pinned: false }]);
+    setCards((prev) => [...prev, { id: crypto.randomUUID(), question, answer, mastered: false, pinned: false, useCount: 0 }]);
     setQuestion(""); setAnswer(""); setShowForm(false);
     toast.success("Card added!");
   };
@@ -76,30 +82,38 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
   };
 
   const flipCard = (id: string) => {
-    if (flippedId !== id) onFlip();
+    const card = cards.find(c => c.id === id);
+    if (card) {
+      const newCount = (card.useCount || 0) + 1;
+      // Only award points if not mastered and used less than 8 times
+      if (newCount <= 8 && !card.mastered && flippedId !== id) {
+        onFlip();
+      } else if (newCount > 8 && !card.mastered) {
+        // Auto-master after 8 uses
+        setCards(prev => prev.map(c => c.id === id ? { ...c, mastered: true, useCount: newCount } : c));
+        toast.info("Card mastered! No more points from this card.");
+        onMaster();
+      }
+      setCards(prev => prev.map(c => c.id === id ? { ...c, useCount: newCount } : c));
+    }
     setFlippedId(flippedId === id ? null : id);
+  };
+
+  const addCommunityCard = (card: typeof COMMUNITY_CARDS[0]) => {
+    setCards(prev => [...prev, { id: crypto.randomUUID(), question: card.question, answer: card.answer, mastered: false, pinned: false, useCount: 0 }]);
+    toast.success(`Added "${card.question}" to your cards!`);
   };
 
   const createGroup = () => {
     if (!groupQuestion.trim() || !groupAnswer.trim()) { toast.error("Question and answer required"); return; }
     const validSubs = groupSubCards.filter((s) => s.trim());
     if (validSubs.length < 3) { toast.error("At least 3 sub-cards required"); return; }
-
     const groupId = crypto.randomUUID();
-    const answerCard: Flashcard = { id: crypto.randomUUID(), question: groupAnswer, answer: groupAnswer, mastered: false, pinned: false, groupId };
-    const subCards: Flashcard[] = validSubs.map((s) => ({
-      id: crypto.randomUUID(), question: s, answer: s, mastered: false, pinned: false, groupId,
-    }));
+    const answerCard: Flashcard = { id: crypto.randomUUID(), question: groupAnswer, answer: groupAnswer, mastered: false, pinned: false, groupId, useCount: 0 };
+    const subCards: Flashcard[] = validSubs.map((s) => ({ id: crypto.randomUUID(), question: s, answer: s, mastered: false, pinned: false, groupId, useCount: 0 }));
     const allGroupCards = [answerCard, ...subCards];
-
     setCards((prev) => [...prev, ...allGroupCards]);
-    setGroups((prev) => [...prev, {
-      id: groupId,
-      mainQuestion: groupQuestion,
-      answerCardId: answerCard.id,
-      cardIds: allGroupCards.map((c) => c.id),
-    }]);
-
+    setGroups((prev) => [...prev, { id: groupId, mainQuestion: groupQuestion, answerCardId: answerCard.id, cardIds: allGroupCards.map((c) => c.id) }]);
     setGroupQuestion(""); setGroupAnswer(""); setGroupSubCards(["", "", "", ""]); setShowGroupForm(false);
     toast.success("Group created!");
   };
@@ -112,9 +126,7 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
       try {
         const data = JSON.parse(ev.target?.result as string);
         if (Array.isArray(data)) {
-          const newCards: Flashcard[] = data.map((d: any) => ({
-            id: crypto.randomUUID(), question: d.question || d.front || "", answer: d.answer || d.back || "", mastered: false, pinned: false,
-          }));
+          const newCards: Flashcard[] = data.map((d: any) => ({ id: crypto.randomUUID(), question: d.question || d.front || "", answer: d.answer || d.back || "", mastered: false, pinned: false, useCount: 0 }));
           setCards((prev) => [...prev, ...newCards]);
           toast.success(`Imported ${newCards.length} cards!`);
         }
@@ -124,7 +136,7 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
   };
 
   const pinnedCards = cards.filter((c) => c.pinned);
-  const displayCards = view === "pinned" ? pinnedCards : view === "groups" ? [] : cards.filter((c) => !c.groupId);
+  const displayCards = view === "pinned" ? pinnedCards : view === "groups" || view === "community" ? [] : cards.filter((c) => !c.groupId);
   const activeGroupData = activeGroup ? groups.find((g) => g.id === activeGroup) : null;
   const groupCards = activeGroupData ? cards.filter((c) => activeGroupData.cardIds.includes(c.id)) : [];
 
@@ -151,9 +163,10 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
 
       {/* View Tabs */}
       <div className="flex gap-1 mb-6 border-b border-border/30">
-        {(["all", "pinned", "groups"] as const).map((v) => (
-          <button key={v} onClick={() => { setView(v); setActiveGroup(null); }} className={`px-4 py-2.5 text-xs font-medium transition-all border-b-2 ${view === v ? "text-primary border-primary" : "text-muted-foreground border-transparent hover:text-foreground"}`}>
-            {v === "all" ? "All Cards" : v === "pinned" ? `Pinned (${pinnedCards.length})` : `Groups (${groups.length})`}
+        {(["all", "pinned", "groups", "community"] as const).map((v) => (
+          <button key={v} onClick={() => { setView(v); setActiveGroup(null); }} className={`px-4 py-2.5 text-xs font-medium transition-all border-b-2 flex items-center gap-1.5 ${view === v ? "text-primary border-primary" : "text-muted-foreground border-transparent hover:text-foreground"}`}>
+            {v === "community" && <Users className="w-3.5 h-3.5" />}
+            {v === "all" ? "All Cards" : v === "pinned" ? `Pinned (${pinnedCards.length})` : v === "groups" ? `Groups (${groups.length})` : "Community"}
           </button>
         ))}
       </div>
@@ -208,6 +221,30 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
         )}
       </AnimatePresence>
 
+      {/* Community Browse */}
+      {view === "community" && (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground mb-3">Browse flashcards shared by other students & teachers</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {COMMUNITY_CARDS.map((card) => (
+              <motion.div key={card.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="glass rounded-xl p-4 border border-border/30 hover:neon-border-active transition-all">
+                <p className="text-sm font-medium text-foreground mb-1">{card.question}</p>
+                <p className="text-xs text-muted-foreground mb-3">{card.answer}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{card.subject}</span>
+                    <span className="text-[10px] text-muted-foreground">{card.grade}</span>
+                    <span className="text-[10px] text-muted-foreground">by {card.author}</span>
+                  </div>
+                  <button onClick={() => addCommunityCard(card)} className="text-xs text-primary hover:underline font-medium">+ Add</button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Groups view */}
       {view === "groups" && !activeGroup && (
         <div className="space-y-3">
@@ -250,7 +287,7 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
                   </div>
                   <div className="absolute inset-0 glass rounded-xl p-4 flex flex-col justify-between bg-primary/5" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
                     <p className="text-foreground text-sm">{card.answer}</p>
-                    {card.id === activeGroupData.answerCardId && <span className="text-xs text-primary font-bold">ANSWER</span>}
+                    {card.id === activeGroupData.answerCardId && <span className="text-xs text-primary font-bold">✓ ANSWER</span>}
                   </div>
                 </div>
               </motion.div>
@@ -268,8 +305,7 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {pinnedCards.map((card, i) => (
                 <motion.div key={card.id} initial={{ opacity: 0, y: -20, rotate: -5 + Math.random() * 10 }}
-                  animate={{ opacity: 1, y: 0, rotate: -3 + (i % 3) * 3 }}
-                  className="relative">
+                  animate={{ opacity: 1, y: 0, rotate: -3 + (i % 3) * 3 }} className="relative">
                   <Pin className="w-4 h-4 text-primary absolute -top-1 left-1/2 -translate-x-1/2 z-10 drop-shadow-lg" />
                   <div className="glass rounded-lg p-4 pt-5 shadow-lg" style={{ borderTop: `3px solid hsl(var(--primary) / 0.6)` }}>
                     <p className="text-foreground text-sm font-medium">{card.question}</p>
@@ -295,7 +331,11 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
                   <div className={`absolute inset-0 glass rounded-xl p-5 flex flex-col justify-between ${card.mastered ? "neon-border-active" : "border border-border/30"}`}
                     style={{ backfaceVisibility: "hidden" }}>
                     <p className="text-foreground text-sm font-medium">{card.question}</p>
-                    <span className="text-xs text-muted-foreground">Click to flip</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Click to flip</span>
+                      {card.useCount >= 8 && <span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><Lock className="w-3 h-3" /> Mastered</span>}
+                      {card.useCount > 0 && card.useCount < 8 && <span className="text-[10px] text-muted-foreground">{card.useCount}/8</span>}
+                    </div>
                   </div>
                   <div className="absolute inset-0 glass rounded-xl p-5 flex flex-col justify-between bg-primary/5"
                     style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
@@ -305,13 +345,11 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
                 </div>
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <button onClick={(e) => { e.stopPropagation(); togglePin(card.id); }}
-                    className={`p-1.5 rounded-md transition-all ${card.pinned ? "bg-primary/20 text-primary" : "bg-secondary/60 text-muted-foreground hover:text-foreground"}`}
-                    title={card.pinned ? "Unpin" : "Pin"}>
+                    className={`p-1.5 rounded-md transition-all ${card.pinned ? "bg-primary/20 text-primary" : "bg-secondary/60 text-muted-foreground hover:text-foreground"}`}>
                     {card.pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); toggleMaster(card.id); }}
-                    className={`p-1.5 rounded-md transition-all ${card.mastered ? "bg-primary/20 text-primary" : "bg-secondary/60 text-muted-foreground hover:text-foreground"}`}
-                    title={card.mastered ? "Unmaster" : "Master"}>
+                    className={`p-1.5 rounded-md transition-all ${card.mastered ? "bg-primary/20 text-primary" : "bg-secondary/60 text-muted-foreground hover:text-foreground"}`}>
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); deleteCard(card.id); }}

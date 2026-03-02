@@ -19,12 +19,14 @@ export type Database = {
           age: number | null
           created_at: string
           display_name: string | null
+          education_system: string | null
           grade: string | null
           id: string
           level: number
           points: number
           rank: string
           rank_level: number
+          school_name: string | null
           theme: string
           updated_at: string
           user_id: string
@@ -37,12 +39,14 @@ export type Database = {
           age?: number | null
           created_at?: string
           display_name?: string | null
+          education_system?: string | null
           grade?: string | null
           id?: string
           level?: number
           points?: number
           rank?: string
           rank_level?: number
+          school_name?: string | null
           theme?: string
           updated_at?: string
           user_id: string
@@ -55,12 +59,14 @@ export type Database = {
           age?: number | null
           created_at?: string
           display_name?: string | null
+          education_system?: string | null
           grade?: string | null
           id?: string
           level?: number
           points?: number
           rank?: string
           rank_level?: number
+          school_name?: string | null
           theme?: string
           updated_at?: string
           user_id?: string

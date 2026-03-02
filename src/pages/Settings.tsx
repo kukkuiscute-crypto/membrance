@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut } from "lucide-react";
+import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut, Sun, Moon, UserPlus, School } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEMES, type ThemeKey } from "@/contexts/ThemeContext";
@@ -17,6 +17,7 @@ const Settings = () => {
   const [noteView, setNoteView] = useState<"sticky" | "book">(() => {
     return (localStorage.getItem("membrance_note_view") as "sticky" | "book") || "sticky";
   });
+  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
     if (profile) {
@@ -28,8 +29,7 @@ const Settings = () => {
   const canChangeUsername = () => {
     if (!profile?.username_changed_at) return true;
     const lastChange = new Date(profile.username_changed_at);
-    const daysSince = (Date.now() - lastChange.getTime()) / (1000 * 60 * 60 * 24);
-    return daysSince >= 30;
+    return (Date.now() - lastChange.getTime()) / (1000 * 60 * 60 * 24) >= 30;
   };
 
   const saveProfile = async () => {
@@ -45,11 +45,8 @@ const Settings = () => {
       if (error) throw error;
       await refreshProfile();
       toast.success("Profile saved!");
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setSaving(false);
-    }
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSaving(false); }
   };
 
   const handleLogout = async () => {
@@ -59,10 +56,20 @@ const Settings = () => {
     toast.success("Logged out successfully");
   };
 
+  const handleAddAccount = () => {
+    window.open(window.location.origin + "/auth", "_blank");
+    toast.info("Sign in with another account in the new tab");
+  };
+
   const toggleNoteView = (view: "sticky" | "book") => {
     setNoteView(view);
     localStorage.setItem("membrance_note_view", view);
     toast.success(`Note view set to ${view === "sticky" ? "Sticky Notes" : "Book Notes"}`);
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    toast.info(darkMode ? "Light mode coming soon — currently dark-only for best experience" : "Dark mode enabled");
   };
 
   return (
@@ -72,7 +79,7 @@ const Settings = () => {
         <p className="text-sm text-muted-foreground">Customize your MEMBRANCE experience</p>
       </div>
 
-      {/* Profile Section — auth users only */}
+      {/* Profile Section */}
       {user && !isGuest && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-2 mb-2">
@@ -91,6 +98,15 @@ const Settings = () => {
             <input value={username} onChange={(e) => setUsername(e.target.value)} disabled={!canChangeUsername()}
               className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-2.5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50" placeholder="@username" />
           </div>
+          {profile?.school_name && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border border-border/20">
+              <School className="w-4 h-4 text-primary" />
+              <div>
+                <p className="text-xs text-foreground font-medium">{profile.school_name}</p>
+                <p className="text-[10px] text-muted-foreground">{profile.education_system || "Not specified"}</p>
+              </div>
+            </div>
+          )}
           <button onClick={saveProfile} disabled={saving}
             className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -104,6 +120,22 @@ const Settings = () => {
           <p className="text-muted-foreground text-sm">Sign in with Google to edit your profile and unlock rankings.</p>
         </div>
       )}
+
+      {/* Light/Dark Toggle */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {darkMode ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+            <h3 className="font-display font-semibold text-foreground">Appearance</h3>
+          </div>
+          <button onClick={toggleDarkMode}
+            className={`relative w-12 h-6 rounded-full transition-all ${darkMode ? "bg-primary/30" : "bg-secondary/60"}`}>
+            <motion.div animate={{ x: darkMode ? 24 : 2 }}
+              className="absolute top-0.5 w-5 h-5 rounded-full bg-primary shadow-lg" />
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">Dark mode is optimized for the MEMBRANCE experience</p>
+      </motion.div>
 
       {/* Theme Engine */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass rounded-xl p-6">
@@ -125,7 +157,7 @@ const Settings = () => {
       </motion.div>
 
       {/* Note View Toggle */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass rounded-xl p-6">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <StickyNote className="w-4 h-4 text-primary" />
           <h3 className="font-display font-semibold text-foreground">Note View</h3>
@@ -149,8 +181,15 @@ const Settings = () => {
         </div>
       </motion.div>
 
-      {/* Log Out */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+      {/* Account Management */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-3">
+        {user && !isGuest && (
+          <button onClick={handleAddAccount}
+            className="flex items-center gap-2 w-full justify-center border border-primary/30 text-primary hover:bg-primary/10 py-3 rounded-xl transition-all text-sm font-medium">
+            <UserPlus className="w-4 h-4" />
+            Add Account
+          </button>
+        )}
         <button onClick={handleLogout}
           className="flex items-center gap-2 w-full justify-center border border-destructive/40 text-destructive hover:bg-destructive/10 py-3 rounded-xl transition-all text-sm font-medium">
           <LogOut className="w-4 h-4" />
