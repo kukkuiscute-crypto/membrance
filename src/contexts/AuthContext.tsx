@@ -25,7 +25,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
 
-  const isGuest = localStorage.getItem("membrance_guest") === "true" && !user;
+  const guestFlag = localStorage.getItem("membrance_guest");
+  const isGuest = (guestFlag === "true" || guestFlag === "lite") && !user;
+  const isLite = guestFlag === "lite" && !user;
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase

@@ -14,6 +14,106 @@ export type Database = {
   }
   public: {
     Tables: {
+      communities: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          member_count: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          member_count?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          member_count?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          community_id: string
+          content: string
+          created_at: string
+          id: string
+          post_type: string
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          community_id: string
+          content: string
+          created_at?: string
+          id?: string
+          post_type?: string
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          community_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          post_type?: string
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           age: number | null
@@ -76,6 +176,47 @@ export type Database = {
           xp?: number
         }
         Relationships: []
+      }
+      shared_videos: {
+        Row: {
+          community_id: string | null
+          created_at: string
+          grade: string | null
+          id: string
+          subject: string | null
+          title: string
+          user_id: string
+          youtube_url: string
+        }
+        Insert: {
+          community_id?: string | null
+          created_at?: string
+          grade?: string | null
+          id?: string
+          subject?: string | null
+          title: string
+          user_id: string
+          youtube_url: string
+        }
+        Update: {
+          community_id?: string | null
+          created_at?: string
+          grade?: string | null
+          id?: string
+          subject?: string | null
+          title?: string
+          user_id?: string
+          youtube_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_videos_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
