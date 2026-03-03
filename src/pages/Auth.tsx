@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import MouseGlow from "@/components/MouseGlow";
+import { User } from "lucide-react";
 
 type Mode = "login" | "signup";
 
@@ -15,6 +16,10 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showLite, setShowLite] = useState(false);
+  const [liteName, setLiteName] = useState("");
+  const [liteUsername, setLiteUsername] = useState("");
+  const [liteDisplayName, setLiteDisplayName] = useState("");
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
@@ -66,6 +71,18 @@ const Auth = () => {
     navigate("/onboarding");
   };
 
+  const handleLite = () => {
+    if (!liteName || !liteUsername) { toast.error("Name and username required"); return; }
+    localStorage.setItem("membrance_guest", "lite");
+    localStorage.setItem("membrance_profile", JSON.stringify({
+      name: liteName,
+      username: liteUsername,
+      display_name: liteDisplayName || liteName,
+      isLite: true,
+    }));
+    navigate("/onboarding");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center relative">
       <MouseGlow />
@@ -110,10 +127,7 @@ const Auth = () => {
           <div>
             <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Email</label>
             <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               placeholder="you@email.com"
             />
@@ -121,21 +135,14 @@ const Auth = () => {
           <div>
             <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Password</label>
             <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               placeholder="••••••••"
             />
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            disabled={loading}
-            type="submit"
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            disabled={loading} type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-xl transition-colors glow-box-strong disabled:opacity-50"
           >
             {loading ? "Loading..." : mode === "login" ? "Sign In" : "Sign Up"}
@@ -143,29 +150,44 @@ const Auth = () => {
         </form>
 
         <div className="mt-4 text-center">
-          <button
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-            className="text-sm text-muted-foreground hover:text-primary transition-colors"
-          >
+          <button onClick={() => setMode(mode === "login" ? "signup" : "login")}
+            className="text-sm text-muted-foreground hover:text-primary transition-colors">
             {mode === "login" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
           </button>
         </div>
 
         <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border/30" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="px-2 bg-card/60 text-muted-foreground">or</span>
-          </div>
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/30" /></div>
+          <div className="relative flex justify-center text-xs"><span className="px-2 bg-card/60 text-muted-foreground">or</span></div>
         </div>
 
-        <button
-          onClick={handleGuest}
-          className="w-full border border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/30 py-3 rounded-xl transition-all text-sm"
-        >
-          Continue as Guest
-        </button>
+        {/* Lite Account */}
+        {showLite ? (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-3">
+            <input value={liteName} onChange={e => setLiteName(e.target.value)} placeholder="Your name"
+              className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-2.5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+            <input value={liteUsername} onChange={e => setLiteUsername(e.target.value)} placeholder="Username"
+              className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-2.5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+            <input value={liteDisplayName} onChange={e => setLiteDisplayName(e.target.value)} placeholder="Display name (optional)"
+              className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-2.5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleLite}
+              className="w-full bg-primary/15 text-primary border border-primary/30 font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+              <User className="w-4 h-4" /> Continue with Lite Account
+            </motion.button>
+            <button onClick={() => setShowLite(false)} className="w-full text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+          </motion.div>
+        ) : (
+          <div className="flex gap-2">
+            <button onClick={() => setShowLite(true)}
+              className="flex-1 border border-primary/30 text-primary hover:bg-primary/10 py-3 rounded-xl transition-all text-sm font-medium flex items-center justify-center gap-2">
+              <User className="w-4 h-4" /> Lite Account
+            </button>
+            <button onClick={handleGuest}
+              className="flex-1 border border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/30 py-3 rounded-xl transition-all text-sm">
+              Guest Mode
+            </button>
+          </div>
+        )}
       </motion.div>
     </div>
   );
