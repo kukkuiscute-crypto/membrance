@@ -13,6 +13,7 @@ import VideoHubPage from "@/pages/VideoHub";
 import YourDeskPage from "@/pages/YourDesk";
 import CommunitiesPage from "@/pages/Communities";
 import LeaderboardPage from "@/pages/Leaderboard";
+import ProfilePage from "@/pages/Profile";
 import TrinityPanel from "@/components/TrinityPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,16 +28,12 @@ const Dashboard = () => {
 
   const addPoints = useCallback(async (amount: number) => {
     if (user && !isGuest) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("points")
-        .eq("user_id", user.id)
-        .single();
+      const { data } = await supabase.from("profiles").select("points, monthly_points").eq("user_id", user.id).single();
       if (data) {
-        await supabase
-          .from("profiles")
-          .update({ points: (data.points || 0) + amount })
-          .eq("user_id", user.id);
+        await supabase.from("profiles").update({
+          points: (data.points || 0) + amount,
+          monthly_points: (data.monthly_points || 0) + amount,
+        }).eq("user_id", user.id);
       }
     }
     setJustAdded(true);
@@ -51,7 +48,7 @@ const Dashboard = () => {
       <DashboardSidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
 
       <div className="flex-1 flex flex-col min-h-0 relative z-10">
-        <header className="h-16 flex items-center justify-between px-6 border-b border-border/30 glass-strong shrink-0">
+        <header className="h-14 flex items-center justify-between px-6 border-b border-border/30 glass-strong shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="md:hidden p-2 rounded-lg hover:bg-secondary/60 text-muted-foreground">
@@ -73,6 +70,7 @@ const Dashboard = () => {
             <Route path="desk" element={<YourDeskPage />} />
             <Route path="communities" element={<CommunitiesPage />} />
             <Route path="leaderboard" element={<LeaderboardPage />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="olympiads" element={<OlympiadsPage />} />
             <Route path="live" element={<LiveClassesPage />} />
             <Route path="settings" element={<SettingsPage />} />
