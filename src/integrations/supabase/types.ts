@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_chats: {
+        Row: {
+          assistant: string
+          created_at: string
+          id: string
+          messages: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assistant?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assistant?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       communities: {
         Row: {
           created_at: string
@@ -76,6 +106,41 @@ export type Database = {
           },
         ]
       }
+      community_messages: {
+        Row: {
+          community_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          community_id: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          community_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_messages_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_posts: {
         Row: {
           community_id: string
@@ -122,7 +187,10 @@ export type Database = {
           education_system: string | null
           grade: string | null
           id: string
+          is_verified: boolean
           level: number
+          monthly_points: number
+          monthly_points_reset_at: string | null
           points: number
           rank: string
           rank_level: number
@@ -142,7 +210,10 @@ export type Database = {
           education_system?: string | null
           grade?: string | null
           id?: string
+          is_verified?: boolean
           level?: number
+          monthly_points?: number
+          monthly_points_reset_at?: string | null
           points?: number
           rank?: string
           rank_level?: number
@@ -162,7 +233,10 @@ export type Database = {
           education_system?: string | null
           grade?: string | null
           id?: string
+          is_verified?: boolean
           level?: number
+          monthly_points?: number
+          monthly_points_reset_at?: string | null
           points?: number
           rank?: string
           rank_level?: number
@@ -174,6 +248,39 @@ export type Database = {
           username?: string | null
           username_changed_at?: string | null
           xp?: number
+        }
+        Relationships: []
+      }
+      saved_videos: {
+        Row: {
+          channel: string | null
+          created_at: string
+          id: string
+          thumbnail_url: string | null
+          title: string
+          user_id: string
+          youtube_id: string | null
+          youtube_url: string
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          id?: string
+          thumbnail_url?: string | null
+          title: string
+          user_id: string
+          youtube_id?: string | null
+          youtube_url: string
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          id?: string
+          thumbnail_url?: string | null
+          title?: string
+          user_id?: string
+          youtube_id?: string | null
+          youtube_url?: string
         }
         Relationships: []
       }
@@ -217,6 +324,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_connections: {
+        Row: {
+          connected_user_id: string
+          created_at: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          connected_user_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          connected_user_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
