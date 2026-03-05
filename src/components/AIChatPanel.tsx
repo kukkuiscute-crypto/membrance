@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -14,6 +16,7 @@ const AIChatPanel = ({ functionName, placeholder }: AIChatPanelProps) => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
@@ -92,6 +95,25 @@ const AIChatPanel = ({ functionName, placeholder }: AIChatPanelProps) => {
     }
   };
 
+  const saveChat = async () => {
+    if (messages.length === 0) { toast.error("No messages to save"); return; }
+    if (!user) {
+      // Save to localStorage for guests/lite
+      const existing = JSON.parse(localStorage.getItem("membrance_ai_chats") || "[]");
+      const title = messages[0]?.content?.slice(0, 50) || "Chat";
+      existing.unshift({ id: crypto.randomUUID(), title, messages, assistant: functionName, created_at: new Date().toISOString() });
+      localStorage.setItem("membrance_ai_chats", JSON.stringify(existing.slice(0, 50)));
+      toast.success("Chat saved to your Desk!");
+      return;
+    }
+    const title = messages[0]?.content?.slice(0, 50) || "Chat";
+    const { error } = await supabase.from("ai_chats").insert({
+      user_id: user.id, title, messages: messages as any, assistant: functionName,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Chat saved to your Desk!");
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -131,6 +153,12 @@ const AIChatPanel = ({ functionName, placeholder }: AIChatPanelProps) => {
             placeholder={placeholder}
             className="flex-1 bg-secondary/60 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
+          {messages.length > 0 && (
+            <button onClick={saveChat} title="Save chat to Desk"
+              className="p-2 rounded-lg bg-secondary/60 text-muted-foreground hover:text-primary border border-border/30 transition-colors">
+              <Save className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={send}
             disabled={loading || !input.trim()}
