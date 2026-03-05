@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Search, Clock, Plus, X, Bookmark, BookmarkCheck, RefreshCw } from "lucide-react";
+import { Play, Search, Clock, Plus, X, Bookmark, BookmarkCheck, RefreshCw, ChevronUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VIDEO_LIBRARY, SUBJECTS, getRecommendedVideos, extractYoutubeId, type Video } from "@/lib/videoLibrary";
+
+const BATCH_SIZE = 12;
 
 const VideoHub = () => {
   const { profile, isGuest, user } = useAuth();
@@ -19,10 +21,45 @@ const VideoHub = () => {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"recommended" | "library" | "shared">("recommended");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const scrollTopRef = useRef<HTMLDivElement>(null);
 
   const userGrade = profile?.grade || "";
 
-  const recommended = useMemo(() => getRecommendedVideos(userGrade, 15), [userGrade, refreshKey]);
+  // Build a shuffled infinite pool from library
+  const infinitePool = useMemo(() => {
+    const base = tab === "recommended" ? getRecommendedVideos(userGrade, VIDEO_LIBRARY.length) : [...VIDEO_LIBRARY];
+    // Create a large pool by repeating and re-indexing
+    const pool: Video[] = [];
+    for (let cycle = 0; cycle < 20; cycle++) {
+      // Shuffle each cycle differently
+      const shuffled = [...base].sort(() => Math.random() - 0.5);
+      shuffled.forEach((v, i) => {
+        pool.push({ ...v, id: `${v.id}_c${cycle}_${i}` });
+      });
+    }
+    return pool;
+  }, [userGrade, refreshKey, tab]);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [searchQuery, selectedSubject, tab, refreshKey]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => prev + BATCH_SIZE);
+        }
+      },
+      { threshold: 0.1, rootMargin: "200px" }
+    );
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => { fetchSharedVideos(); if (user) fetchSaved(); }, [user]);
 
@@ -73,9 +110,16 @@ const VideoHub = () => {
     fetchSharedVideos();
   };
 
-  const getVideos = () => {
-    let videos: Video[] = tab === "recommended" ? recommended : VIDEO_LIBRARY;
-    if (searchQuery) videos = videos.filter(v => v.title.toLowerCase().includes(searchQuery.toLowerCase()) || v.channel.toLowerCase().includes(searchQuery.toLowerCase()) || v.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())));
+  const getFilteredVideos = () => {
+    let videos = infinitePool;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      videos = videos.filter(v =>
+        v.title.toLowerCase().includes(q) ||
+        v.channel.toLowerCase().includes(q) ||
+        v.tags?.some(t => t.toLowerCase().includes(q))
+      );
+    }
     if (selectedSubject !== "All") videos = videos.filter(v => v.subject === selectedSubject);
     return videos;
   };
@@ -86,9 +130,16 @@ const VideoHub = () => {
     return ms && msu;
   });
 
+  const displayVideos = getFilteredVideos().slice(0, visibleCount);
+  const hasMore = visibleCount < getFilteredVideos().length;
+
+  const scrollToTop = () => {
+    scrollTopRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const VideoCard = ({ video, index }: { video: Video; index: number }) => (
     <motion.div key={video.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03 }}
+      transition={{ delay: Math.min(index * 0.02, 0.3) }}
       className="glass rounded-xl overflow-hidden group cursor-pointer hover:neon-border-active transition-all">
       <div className="relative aspect-video bg-secondary/40" onClick={() => setPlayingId(video.youtubeId)}>
         <img src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} alt={video.title}
@@ -124,14 +175,15 @@ const VideoHub = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
+      <div ref={scrollTopRef} />
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="font-display text-2xl font-bold text-foreground">Video Hub</h2>
-          <p className="text-sm text-muted-foreground">{VIDEO_LIBRARY.length}+ educational videos · {userGrade || "All grades"}</p>
+          <p className="text-sm text-muted-foreground">Infinite study videos · {userGrade || "All grades"}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setRefreshKey(k => k + 1)}
-            className="p-2 rounded-lg bg-secondary/40 text-muted-foreground hover:text-foreground border border-border/30 transition-colors" title="Refresh">
+            className="p-2 rounded-lg bg-secondary/40 text-muted-foreground hover:text-foreground border border-border/30 transition-colors" title="Refresh feed">
             <RefreshCw className="w-4 h-4" />
           </button>
           <button onClick={() => setShowShareModal(true)}
@@ -165,7 +217,7 @@ const VideoHub = () => {
         {(["recommended", "library", "shared"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${tab === t ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
-            {t === "recommended" ? `⭐ For You` : t === "library" ? `📚 All (${VIDEO_LIBRARY.length})` : `🌐 Community (${sharedVideos.length})`}
+            {t === "recommended" ? `⭐ For You` : t === "library" ? `📚 All` : `🌐 Community (${sharedVideos.length})`}
           </button>
         ))}
       </div>
@@ -188,16 +240,27 @@ const VideoHub = () => {
         </div>
       </div>
 
-      {/* Video Grid */}
+      {/* Video Grid - Infinite Scroll */}
       {tab !== "shared" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {getVideos().map((video, i) => <VideoCard key={video.id} video={video} index={i} />)}
-          {getVideos().length === 0 && (
-            <div className="col-span-full glass rounded-xl p-10 text-center">
-              <p className="text-muted-foreground text-sm">No videos match your search.</p>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {displayVideos.map((video, i) => <VideoCard key={video.id} video={video} index={i} />)}
+            {displayVideos.length === 0 && (
+              <div className="col-span-full glass rounded-xl p-10 text-center">
+                <p className="text-muted-foreground text-sm">No videos match your search.</p>
+              </div>
+            )}
+          </div>
+          {/* Infinite scroll trigger */}
+          {hasMore && (
+            <div ref={loaderRef} className="flex justify-center py-8">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Loading more videos...
+              </div>
             </div>
           )}
-        </div>
+        </>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredShared.map((video: any, i: number) => {
@@ -230,6 +293,18 @@ const VideoHub = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Scroll to top button */}
+      {visibleCount > BATCH_SIZE * 2 && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-40 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors"
+        >
+          <ChevronUp className="w-5 h-5" />
+        </motion.button>
       )}
 
       {/* Share Modal */}
