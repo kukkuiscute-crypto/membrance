@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { StickyNote, Plus, Trash2, BookOpen, PenLine, ChevronUp, ChevronDown, Download, MessageSquare, Layers, Link, Video, FolderOpen, ArrowDown } from "lucide-react";
+import { StickyNote, Plus, Trash2, BookOpen, PenLine, Download, MessageSquare, Layers, Link, Video, FolderOpen, ArrowDown, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Note {
   id: string;
@@ -27,6 +29,7 @@ const NOTE_COLORS = [
 ];
 
 const YourDesk = () => {
+  const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem("membrance_notes");
     return saved ? JSON.parse(saved) : [];
@@ -43,11 +46,26 @@ const YourDesk = () => {
   const [showAddUrl, setShowAddUrl] = useState(false);
   const [newUrlTitle, setNewUrlTitle] = useState("");
   const [newUrl, setNewUrl] = useState("");
-  const [scrolledToDesk, setScrolledToDesk] = useState(false);
+  const [aiChats, setAiChats] = useState<any[]>([]);
+  const [watchHistory] = useState<any[]>(() => JSON.parse(localStorage.getItem("membrance_watch_history") || "[]"));
 
   useEffect(() => { localStorage.setItem("membrance_notes", JSON.stringify(notes)); }, [notes]);
   useEffect(() => { localStorage.setItem("membrance_note_view", viewMode); }, [viewMode]);
   useEffect(() => { localStorage.setItem("membrance_saved_urls", JSON.stringify(savedUrls)); }, [savedUrls]);
+
+  // Fetch AI chats
+  useEffect(() => {
+    const loadChats = async () => {
+      if (user) {
+        const { data } = await supabase.from("ai_chats").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(50);
+        if (data) setAiChats(data);
+      } else {
+        const local = JSON.parse(localStorage.getItem("membrance_ai_chats") || "[]");
+        setAiChats(local);
+      }
+    };
+    loadChats();
+  }, [user]);
 
   const addNote = () => {
     const newNote: Note = { id: crypto.randomUUID(), content: "", color: Math.floor(Math.random() * NOTE_COLORS.length), createdAt: new Date().toISOString() };
@@ -66,20 +84,29 @@ const YourDesk = () => {
     toast.success("URL saved!");
   };
 
+  const deleteAiChat = async (chatId: string) => {
+    if (user) {
+      await supabase.from("ai_chats").delete().eq("id", chatId);
+    } else {
+      const updated = aiChats.filter(c => c.id !== chatId);
+      localStorage.setItem("membrance_ai_chats", JSON.stringify(updated));
+    }
+    setAiChats(prev => prev.filter(c => c.id !== chatId));
+    toast.success("Chat deleted");
+  };
+
   const savedFlashcards = JSON.parse(localStorage.getItem("membrance_flashcards") || "[]");
-  const watchedVideos = JSON.parse(localStorage.getItem("membrance_watched") || "[]");
 
   const scrollToDesk = () => {
-    setScrolledToDesk(true);
     document.getElementById("desk-folders")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const folders = [
     { id: "notes", icon: StickyNote, label: "Notes", count: notes.length, color: "45 93% 47%" },
     { id: "flashcards", icon: Layers, label: "Flashcards", count: savedFlashcards.length, color: "217 91% 60%" },
-    { id: "videos", icon: Video, label: "Downloaded Videos", count: watchedVideos.length, color: "350 80% 60%" },
+    { id: "videos", icon: Video, label: "Watch History", count: watchHistory.length, color: "350 80% 60%" },
     { id: "urls", icon: Link, label: "Saved URLs", count: savedUrls.length, color: "142 71% 45%" },
-    { id: "chats", icon: MessageSquare, label: "AI Chats", count: 0, color: "262 83% 65%" },
+    { id: "chats", icon: MessageSquare, label: "AI Chats", count: aiChats.length, color: "262 83% 65%" },
     { id: "downloads", icon: Download, label: "Downloads", count: 0, color: "174 72% 45%" },
   ];
 
@@ -255,11 +282,48 @@ const YourDesk = () => {
             )}
             {activeFolder === "videos" && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                className="glass rounded-xl p-4">
-                <p className="text-xs text-muted-foreground">{watchedVideos.length} watched videos tracked</p>
+                className="glass rounded-xl p-4 overflow-hidden">
+                <h4 className="text-sm font-medium text-foreground mb-3">Watch History</h4>
+                {watchHistory.length === 0 ? <p className="text-xs text-muted-foreground">No watch history yet</p> : (
+                  <div className="space-y-1 max-h-60 overflow-y-auto">
+                    {watchHistory.map((v: any, i: number) => (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/40">
+                        <img src={`https://img.youtube.com/vi/${v.youtubeId}/default.jpg`} alt="" className="w-16 h-9 rounded object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">{v.title}</p>
+                          <p className="text-[10px] text-muted-foreground">{new Date(v.watchedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             )}
-            {(activeFolder === "chats" || activeFolder === "downloads") && (
+            {activeFolder === "chats" && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                className="glass rounded-xl p-4 overflow-hidden">
+                <h4 className="text-sm font-medium text-foreground mb-3">Saved AI Chats</h4>
+                {aiChats.length === 0 ? <p className="text-xs text-muted-foreground">No saved chats yet. Use the save button in AI Tools panel.</p> : (
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {aiChats.map((chat: any) => (
+                      <div key={chat.id} className="p-3 rounded-lg bg-secondary/30 border border-border/20 group">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-medium text-foreground truncate">{chat.title}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase">{chat.assistant}</span>
+                            <button onClick={() => deleteAiChat(chat.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">{new Date(chat.created_at || chat.updated_at).toLocaleDateString()} · {(chat.messages as any[])?.length || 0} messages</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+            {activeFolder === "downloads" && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                 className="glass rounded-xl p-4">
                 <p className="text-xs text-muted-foreground">Coming soon</p>

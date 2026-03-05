@@ -51,6 +51,7 @@ export type Database = {
           description: string | null
           icon: string | null
           id: string
+          join_mode: string
           member_count: number
           name: string
         }
@@ -60,6 +61,7 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          join_mode?: string
           member_count?: number
           name: string
         }
@@ -69,10 +71,43 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          join_mode?: string
           member_count?: number
           name?: string
         }
         Relationships: []
+      }
+      community_join_requests: {
+        Row: {
+          community_id: string
+          created_at: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_join_requests_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       community_members: {
         Row: {
@@ -354,7 +389,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reset_monthly_points: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

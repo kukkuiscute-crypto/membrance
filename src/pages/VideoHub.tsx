@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Search, Clock, Plus, X, Bookmark, BookmarkCheck, RefreshCw, ChevronUp } from "lucide-react";
+import { Play, Search, Clock, Plus, X, Bookmark, BookmarkCheck, RefreshCw, ChevronUp, History, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,21 +19,26 @@ const VideoHub = () => {
   const [shareSubject, setShareSubject] = useState("Mathematics");
   const [sharedVideos, setSharedVideos] = useState<any[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [tab, setTab] = useState<"recommended" | "library" | "shared">("recommended");
+  const [tab, setTab] = useState<"recommended" | "library" | "shared" | "history">("recommended");
   const [refreshKey, setRefreshKey] = useState(0);
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loaderRef = useRef<HTMLDivElement>(null);
   const scrollTopRef = useRef<HTMLDivElement>(null);
+  const [searchHistory, setSearchHistory] = useState<string[]>(() =>
+    JSON.parse(localStorage.getItem("membrance_search_history") || "[]")
+  );
+  const [watchHistory, setWatchHistory] = useState<{ id: string; title: string; youtubeId: string; watchedAt: string }[]>(() =>
+    JSON.parse(localStorage.getItem("membrance_watch_history") || "[]")
+  );
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
 
   const userGrade = profile?.grade || "";
 
   // Build a shuffled infinite pool from library
   const infinitePool = useMemo(() => {
     const base = tab === "recommended" ? getRecommendedVideos(userGrade, VIDEO_LIBRARY.length) : [...VIDEO_LIBRARY];
-    // Create a large pool by repeating and re-indexing
     const pool: Video[] = [];
     for (let cycle = 0; cycle < 20; cycle++) {
-      // Shuffle each cycle differently
       const shuffled = [...base].sort(() => Math.random() - 0.5);
       shuffled.forEach((v, i) => {
         pool.push({ ...v, id: `${v.id}_c${cycle}_${i}` });
@@ -42,19 +47,12 @@ const VideoHub = () => {
     return pool;
   }, [userGrade, refreshKey, tab]);
 
-  // Reset visible count when filters change
-  useEffect(() => {
-    setVisibleCount(BATCH_SIZE);
-  }, [searchQuery, selectedSubject, tab, refreshKey]);
+  useEffect(() => { setVisibleCount(BATCH_SIZE); }, [searchQuery, selectedSubject, tab, refreshKey]);
 
   // Infinite scroll observer
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => prev + BATCH_SIZE);
-        }
-      },
+      (entries) => { if (entries[0].isIntersecting) setVisibleCount((prev) => prev + BATCH_SIZE); },
       { threshold: 0.1, rootMargin: "200px" }
     );
     if (loaderRef.current) observer.observe(loaderRef.current);
@@ -62,8 +60,6 @@ const VideoHub = () => {
   }, []);
 
   useEffect(() => { fetchSharedVideos(); if (user) fetchSaved(); }, [user]);
-
-  // Auto-refresh every 60s
   useEffect(() => {
     const interval = setInterval(() => setRefreshKey(k => k + 1), 60000);
     return () => clearInterval(interval);
@@ -80,8 +76,50 @@ const VideoHub = () => {
     if (data) setSavedIds(new Set(data.map((d: any) => d.youtube_id).filter(Boolean)));
   };
 
+  const addToSearchHistory = (query: string) => {
+    if (!query.trim()) return;
+    const updated = [query, ...searchHistory.filter(h => h !== query)].slice(0, 20);
+    setSearchHistory(updated);
+    localStorage.setItem("membrance_search_history", JSON.stringify(updated));
+  };
+
+  const addToWatchHistory = (video: Video) => {
+    const entry = { id: video.id, title: video.title, youtubeId: video.youtubeId, watchedAt: new Date().toISOString() };
+    const updated = [entry, ...watchHistory.filter(h => h.youtubeId !== video.youtubeId)].slice(0, 100);
+    setWatchHistory(updated);
+    localStorage.setItem("membrance_watch_history", JSON.stringify(updated));
+  };
+
+  const handlePlay = (video: Video) => {
+    setPlayingId(video.youtubeId);
+    addToWatchHistory(video);
+  };
+
+  const handleSearch = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      addToSearchHistory(searchQuery.trim());
+      setShowSearchSuggestions(false);
+    }
+  };
+
   const toggleSave = useCallback(async (video: Video) => {
-    if (!user || isGuest) { toast.error("Sign in to save videos"); return; }
+    if (!user && !isGuest) { toast.error("Sign in to save videos"); return; }
+    if (!user) {
+      // localStorage save for guests
+      const saved = JSON.parse(localStorage.getItem("membrance_saved_videos") || "[]");
+      const exists = saved.some((s: any) => s.youtubeId === video.youtubeId);
+      if (exists) {
+        localStorage.setItem("membrance_saved_videos", JSON.stringify(saved.filter((s: any) => s.youtubeId !== video.youtubeId)));
+        setSavedIds(prev => { const n = new Set(prev); n.delete(video.youtubeId); return n; });
+        toast.success("Removed from saved");
+      } else {
+        saved.unshift({ youtubeId: video.youtubeId, title: video.title, channel: video.channel });
+        localStorage.setItem("membrance_saved_videos", JSON.stringify(saved));
+        setSavedIds(prev => new Set(prev).add(video.youtubeId));
+        toast.success("Video saved!");
+      }
+      return;
+    }
     if (savedIds.has(video.youtubeId)) {
       await supabase.from("saved_videos").delete().eq("user_id", user.id).eq("youtube_id", video.youtubeId);
       setSavedIds(prev => { const n = new Set(prev); n.delete(video.youtubeId); return n; });
@@ -100,7 +138,7 @@ const VideoHub = () => {
     if (!shareUrl || !shareTitle) { toast.error("Fill in title and URL"); return; }
     const ytId = extractYoutubeId(shareUrl);
     if (!ytId) { toast.error("Invalid YouTube URL"); return; }
-    if (!user || isGuest) { toast.error("Sign in to share videos"); return; }
+    if (!user) { toast.error("Sign in to share videos"); return; }
     const { error } = await supabase.from("shared_videos").insert({
       user_id: user.id, title: shareTitle, youtube_url: shareUrl, subject: shareSubject, grade: userGrade || null,
     });
@@ -113,12 +151,11 @@ const VideoHub = () => {
   const getFilteredVideos = () => {
     let videos = infinitePool;
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      videos = videos.filter(v =>
-        v.title.toLowerCase().includes(q) ||
-        v.channel.toLowerCase().includes(q) ||
-        v.tags?.some(t => t.toLowerCase().includes(q))
-      );
+      const terms = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+      videos = videos.filter(v => {
+        const text = `${v.title} ${v.channel} ${v.subject} ${v.grade} ${v.tags?.join(" ") || ""}`.toLowerCase();
+        return terms.every(term => text.includes(term));
+      });
     }
     if (selectedSubject !== "All") videos = videos.filter(v => v.subject === selectedSubject);
     return videos;
@@ -133,15 +170,21 @@ const VideoHub = () => {
   const displayVideos = getFilteredVideos().slice(0, visibleCount);
   const hasMore = visibleCount < getFilteredVideos().length;
 
-  const scrollToTop = () => {
-    scrollTopRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToTop = () => { scrollTopRef.current?.scrollIntoView({ behavior: "smooth" }); };
+
+  // Load guest saved on mount
+  useEffect(() => {
+    if (!user) {
+      const saved = JSON.parse(localStorage.getItem("membrance_saved_videos") || "[]");
+      setSavedIds(new Set(saved.map((s: any) => s.youtubeId)));
+    }
+  }, [user]);
 
   const VideoCard = ({ video, index }: { video: Video; index: number }) => (
     <motion.div key={video.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.02, 0.3) }}
       className="glass rounded-xl overflow-hidden group cursor-pointer hover:neon-border-active transition-all">
-      <div className="relative aspect-video bg-secondary/40" onClick={() => setPlayingId(video.youtubeId)}>
+      <div className="relative aspect-video bg-secondary/40" onClick={() => handlePlay(video)}>
         <img src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} alt={video.title}
           className="w-full h-full object-cover" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
@@ -172,6 +215,8 @@ const VideoHub = () => {
       </div>
     </motion.div>
   );
+
+  const filteredSuggestions = searchHistory.filter(h => h.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5);
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -214,10 +259,10 @@ const VideoHub = () => {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4">
-        {(["recommended", "library", "shared"] as const).map(t => (
+        {(["recommended", "library", "shared", "history"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${tab === t ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
-            {t === "recommended" ? `⭐ For You` : t === "library" ? `📚 All` : `🌐 Community (${sharedVideos.length})`}
+            {t === "recommended" ? `⭐ For You` : t === "library" ? `📚 All` : t === "shared" ? `🌐 Community (${sharedVideos.length})` : `🕐 History`}
           </button>
         ))}
       </div>
@@ -226,9 +271,24 @@ const VideoHub = () => {
       <div className="flex gap-3 mb-5 flex-wrap">
         <div className="flex-1 min-w-[200px] relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+          <input value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setShowSearchSuggestions(true); }}
+            onKeyDown={handleSearch}
+            onFocus={() => setShowSearchSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
             className="w-full bg-secondary/60 border border-border/50 rounded-lg pl-10 pr-4 py-2.5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="Search videos, channels, topics..." />
+          {/* Search suggestions dropdown */}
+          {showSearchSuggestions && filteredSuggestions.length > 0 && searchQuery && (
+            <div className="absolute top-full left-0 right-0 mt-1 glass rounded-lg border border-border/30 z-20 overflow-hidden">
+              {filteredSuggestions.map((s, i) => (
+                <button key={i} onClick={() => { setSearchQuery(s); setShowSearchSuggestions(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-secondary/40 transition-colors text-left">
+                  <History className="w-3 h-3 text-muted-foreground" /> {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex gap-1 flex-wrap">
           {SUBJECTS.map((s) => (
@@ -240,23 +300,57 @@ const VideoHub = () => {
         </div>
       </div>
 
-      {/* Video Grid - Infinite Scroll */}
-      {tab !== "shared" ? (
+      {/* History Tab */}
+      {tab === "history" ? (
+        <div className="space-y-3">
+          {watchHistory.length === 0 ? (
+            <div className="glass rounded-xl p-10 text-center">
+              <Eye className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground text-sm">No watch history yet. Start watching videos!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {watchHistory.map((h, i) => {
+                const video = VIDEO_LIBRARY.find(v => v.youtubeId === h.youtubeId);
+                if (!video) return null;
+                return <VideoCard key={`${h.youtubeId}-${i}`} video={video} index={i} />;
+              })}
+            </div>
+          )}
+          {searchHistory.length > 0 && (
+            <div className="glass rounded-xl p-4 mt-4">
+              <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                <History className="w-4 h-4 text-primary" /> Recent Searches
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {searchHistory.map((s, i) => (
+                  <button key={i} onClick={() => { setSearchQuery(s); setTab("library"); }}
+                    className="px-3 py-1.5 rounded-full bg-secondary/40 text-xs text-muted-foreground hover:text-foreground border border-border/30 transition-colors">
+                    {s}
+                  </button>
+                ))}
+                <button onClick={() => { setSearchHistory([]); localStorage.removeItem("membrance_search_history"); toast.success("Search history cleared"); }}
+                  className="px-3 py-1.5 rounded-full bg-destructive/10 text-xs text-destructive border border-destructive/20 transition-colors">
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : tab !== "shared" ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {displayVideos.map((video, i) => <VideoCard key={video.id} video={video} index={i} />)}
             {displayVideos.length === 0 && (
               <div className="col-span-full glass rounded-xl p-10 text-center">
-                <p className="text-muted-foreground text-sm">No videos match your search.</p>
+                <p className="text-muted-foreground text-sm">No videos match your search. Try different keywords.</p>
               </div>
             )}
           </div>
-          {/* Infinite scroll trigger */}
           {hasMore && (
             <div ref={loaderRef} className="flex justify-center py-8">
               <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Loading more videos...
+                <RefreshCw className="w-4 h-4 animate-spin" /> Loading more videos...
               </div>
             </div>
           )}
@@ -295,14 +389,11 @@ const VideoHub = () => {
         </div>
       )}
 
-      {/* Scroll to top button */}
+      {/* Scroll to top */}
       {visibleCount > BATCH_SIZE * 2 && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-40 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors"
-        >
+          className="fixed bottom-6 right-6 z-40 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors">
           <ChevronUp className="w-5 h-5" />
         </motion.button>
       )}
