@@ -33,19 +33,25 @@ export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "neon-mode", label: "Neon Mode", hue: "120 100% 50%" },
 ];
 
+export type AppearanceMode = "dark" | "light";
+
 interface ThemeContextType {
   theme: ThemeKey;
   setTheme: (t: ThemeKey) => void;
+  appearance: AppearanceMode;
+  setAppearance: (m: AppearanceMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: "midnight-dark",
   setTheme: () => {},
+  appearance: "dark",
+  setAppearance: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
 
-function applyTheme(key: ThemeKey) {
+function applyTheme(key: ThemeKey, mode: AppearanceMode) {
   const t = THEMES.find((th) => th.key === key) || THEMES[0];
   const root = document.documentElement;
   const vars = [
@@ -56,20 +62,58 @@ function applyTheme(key: ThemeKey) {
 
   const parts = t.hue.split(" ");
   if (parts.length === 3) {
-    root.style.setProperty("--sidebar-accent", `${parts[0]} 40% 15%`);
-    root.style.setProperty("--sidebar-accent-foreground", `${parts[0]} 83% 80%`);
     root.style.setProperty("--glow-muted", `${parts[0]} 60% 45%`);
   }
 
-  // Neon mode: boost contrast
-  if (key === "neon-mode") {
-    root.style.setProperty("--background", "0 0% 2%");
-    root.style.setProperty("--card", "0 0% 4%");
-    root.style.setProperty("--border", "120 50% 20%");
+  if (mode === "light") {
+    root.style.setProperty("--background", "0 0% 98%");
+    root.style.setProperty("--foreground", "240 10% 10%");
+    root.style.setProperty("--card", "0 0% 100%");
+    root.style.setProperty("--card-foreground", "240 10% 10%");
+    root.style.setProperty("--popover", "0 0% 100%");
+    root.style.setProperty("--popover-foreground", "240 10% 10%");
+    root.style.setProperty("--secondary", "240 5% 92%");
+    root.style.setProperty("--secondary-foreground", "240 6% 25%");
+    root.style.setProperty("--muted", "240 5% 92%");
+    root.style.setProperty("--muted-foreground", "240 4% 46%");
+    root.style.setProperty("--border", "240 6% 85%");
+    root.style.setProperty("--input", "240 6% 85%");
+    root.style.setProperty("--surface-glass", "0 0% 97%");
+    root.style.setProperty("--sidebar-background", "0 0% 97%");
+    root.style.setProperty("--sidebar-foreground", "240 6% 30%");
+    root.style.setProperty("--sidebar-border", "240 6% 90%");
+    if (parts.length === 3) {
+      root.style.setProperty("--sidebar-accent", `${parts[0]} 30% 93%`);
+      root.style.setProperty("--sidebar-accent-foreground", `${parts[0]} 70% 40%`);
+    }
   } else {
-    root.style.setProperty("--background", "240 10% 3.9%");
-    root.style.setProperty("--card", "240 6% 6%");
-    root.style.setProperty("--border", "240 4% 16%");
+    // Dark mode defaults
+    if (key === "neon-mode") {
+      root.style.setProperty("--background", "0 0% 2%");
+      root.style.setProperty("--card", "0 0% 4%");
+      root.style.setProperty("--border", "120 50% 20%");
+    } else {
+      root.style.setProperty("--background", "240 10% 3.9%");
+      root.style.setProperty("--card", "240 6% 6%");
+      root.style.setProperty("--border", "240 4% 16%");
+    }
+    root.style.setProperty("--foreground", "0 0% 95%");
+    root.style.setProperty("--card-foreground", "0 0% 95%");
+    root.style.setProperty("--popover", "240 6% 6%");
+    root.style.setProperty("--popover-foreground", "0 0% 95%");
+    root.style.setProperty("--secondary", "240 5% 12%");
+    root.style.setProperty("--secondary-foreground", "0 0% 85%");
+    root.style.setProperty("--muted", "240 4% 16%");
+    root.style.setProperty("--muted-foreground", "240 5% 55%");
+    root.style.setProperty("--input", "240 4% 16%");
+    root.style.setProperty("--surface-glass", "240 6% 8%");
+    root.style.setProperty("--sidebar-background", "240 8% 5%");
+    root.style.setProperty("--sidebar-foreground", "0 0% 75%");
+    root.style.setProperty("--sidebar-border", "240 4% 12%");
+    if (parts.length === 3) {
+      root.style.setProperty("--sidebar-accent", `${parts[0]} 40% 15%`);
+      root.style.setProperty("--sidebar-accent-foreground", `${parts[0]} 83% 80%`);
+    }
   }
 }
 
@@ -79,15 +123,23 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return (saved as ThemeKey) || "midnight-dark";
   });
 
+  const [appearance, setAppearanceState] = useState<AppearanceMode>(() => {
+    return (localStorage.getItem("membrance_appearance") as AppearanceMode) || "dark";
+  });
+
   useEffect(() => {
-    applyTheme(theme);
+    applyTheme(theme, appearance);
     localStorage.setItem("membrance_theme", theme);
-  }, [theme]);
+  }, [theme, appearance]);
 
   const setTheme = (t: ThemeKey) => setThemeState(t);
+  const setAppearance = (m: AppearanceMode) => {
+    setAppearanceState(m);
+    localStorage.setItem("membrance_appearance", m);
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, appearance, setAppearance }}>
       {children}
     </ThemeContext.Provider>
   );

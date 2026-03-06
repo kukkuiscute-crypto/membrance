@@ -44,6 +44,51 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_events: {
+        Row: {
+          created_at: string
+          day_of_week: number | null
+          description: string | null
+          end_time: string | null
+          event_date: string | null
+          event_type: string
+          id: string
+          is_day_off: boolean | null
+          repeat_mode: string | null
+          start_time: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week?: number | null
+          description?: string | null
+          end_time?: string | null
+          event_date?: string | null
+          event_type?: string
+          id?: string
+          is_day_off?: boolean | null
+          repeat_mode?: string | null
+          start_time?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number | null
+          description?: string | null
+          end_time?: string | null
+          event_date?: string | null
+          event_type?: string
+          id?: string
+          is_day_off?: boolean | null
+          repeat_mode?: string | null
+          start_time?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       communities: {
         Row: {
           created_at: string
@@ -213,6 +258,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      daily_tasks: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          end_time: string
+          id: string
+          start_time: string
+          task_date: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          end_time?: string
+          id?: string
+          start_time?: string
+          task_date?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          end_time?: string
+          id?: string
+          start_time?: string
+          task_date?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
