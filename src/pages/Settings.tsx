@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const { user, isGuest, profile, refreshProfile } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, appearance, setAppearance } = useTheme();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
@@ -17,7 +17,6 @@ const Settings = () => {
   const [noteView, setNoteView] = useState<"sticky" | "book">(() => {
     return (localStorage.getItem("membrance_note_view") as "sticky" | "book") || "sticky";
   });
-  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
     if (profile) {
@@ -67,11 +66,6 @@ const Settings = () => {
     toast.success(`Note view set to ${view === "sticky" ? "Sticky Notes" : "Book Notes"}`);
   };
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    toast.info(darkMode ? "Light mode coming soon — currently dark-only for best experience" : "Dark mode enabled");
-  };
-
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-8">
       <div>
@@ -117,7 +111,7 @@ const Settings = () => {
 
       {isGuest && (
         <div className="glass rounded-xl p-6 text-center">
-          <p className="text-muted-foreground text-sm">Sign in with Google to edit your profile and unlock rankings.</p>
+          <p className="text-muted-foreground text-sm">Sign in with a username to edit your profile and unlock rankings.</p>
         </div>
       )}
 
@@ -125,16 +119,18 @@ const Settings = () => {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass rounded-xl p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {darkMode ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+            {appearance === "dark" ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
             <h3 className="font-display font-semibold text-foreground">Appearance</h3>
           </div>
-          <button onClick={toggleDarkMode}
-            className={`relative w-12 h-6 rounded-full transition-all ${darkMode ? "bg-primary/30" : "bg-secondary/60"}`}>
-            <motion.div animate={{ x: darkMode ? 24 : 2 }}
+          <button onClick={() => setAppearance(appearance === "dark" ? "light" : "dark")}
+            className={`relative w-12 h-6 rounded-full transition-all ${appearance === "dark" ? "bg-primary/30" : "bg-secondary border border-border/50"}`}>
+            <motion.div animate={{ x: appearance === "dark" ? 24 : 2 }}
               className="absolute top-0.5 w-5 h-5 rounded-full bg-primary shadow-lg" />
           </button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">Dark mode is optimized for the MEMBRANCE experience</p>
+        <p className="text-xs text-muted-foreground mt-2">
+          {appearance === "dark" ? "Dark mode · Optimized for late-night studying" : "Light mode · Easy on the eyes during daytime"}
+        </p>
       </motion.div>
 
       {/* Theme Engine */}

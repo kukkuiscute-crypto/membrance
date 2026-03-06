@@ -14,6 +14,7 @@ import YourDeskPage from "@/pages/YourDesk";
 import CommunitiesPage from "@/pages/Communities";
 import LeaderboardPage from "@/pages/Leaderboard";
 import ProfilePage from "@/pages/Profile";
+import CalendarPlannerPage from "@/pages/CalendarPlanner";
 import TrinityPanel from "@/components/TrinityPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +90,7 @@ const Dashboard = () => {
             <Route path="live" element={<LiveClassesPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="rankings" element={<RankingsPage />} />
+            <Route path="calendar" element={<CalendarPlannerPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>

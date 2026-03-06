@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Search, X, Send, CheckCircle, Hammer, Lock, Globe, Bell, Check } from "lucide-react";
+import { Users, Plus, Search, X, Send, CheckCircle, Hammer, Lock, Globe, Bell, Check, Settings, Trash2, UserMinus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -15,6 +15,8 @@ const Communities = () => {
   const [selectedCommunity, setSelectedCommunity] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newIcon, setNewIcon] = useState("📚");
@@ -27,10 +29,14 @@ const Communities = () => {
 
   useEffect(() => { fetchCommunities(); }, []);
   useEffect(() => { if (user) { fetchMemberships(); fetchMyPendingRequests(); } }, [user]);
-  useEffect(() => { if (selectedCommunity) { fetchMessages(selectedCommunity.id); if (myMemberships.get(selectedCommunity.id) === "admin") fetchJoinRequests(selectedCommunity.id); } }, [selectedCommunity]);
+  useEffect(() => {
+    if (selectedCommunity) {
+      fetchMessages(selectedCommunity.id);
+      if (myMemberships.get(selectedCommunity.id) === "admin") fetchJoinRequests(selectedCommunity.id);
+    }
+  }, [selectedCommunity]);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  // Realtime messages
   useEffect(() => {
     if (!selectedCommunity) return;
     const channel = supabase.channel(`chat-${selectedCommunity.id}`)
@@ -65,6 +71,11 @@ const Communities = () => {
   const fetchMessages = async (communityId: string) => {
     const { data } = await supabase.from("community_messages").select("*").eq("community_id", communityId).order("created_at", { ascending: true }).limit(100);
     if (data) setMessages(data);
+  };
+
+  const fetchMembers = async (communityId: string) => {
+    const { data } = await supabase.from("community_members").select("*").eq("community_id", communityId);
+    if (data) setMembers(data);
   };
 
   const createCommunity = async () => {
@@ -115,6 +126,35 @@ const Communities = () => {
     if (selectedCommunity?.id === id) setSelectedCommunity(null);
   };
 
+  const deleteCommunity = async () => {
+    if (!user || !selectedCommunity) return;
+    if (selectedCommunity.created_by !== user.id) { toast.error("Only the creator can delete"); return; }
+    // Delete all related data
+    await supabase.from("community_messages").delete().eq("community_id", selectedCommunity.id);
+    await supabase.from("community_members").delete().eq("community_id", selectedCommunity.id);
+    await supabase.from("community_join_requests").delete().eq("community_id", selectedCommunity.id);
+    await supabase.from("communities").delete().eq("id", selectedCommunity.id);
+    toast.success("Community deleted");
+    setSelectedCommunity(null); setShowSettings(false);
+    fetchCommunities(); fetchMemberships();
+  };
+
+  const kickMember = async (memberId: string, memberUserId: string) => {
+    if (!user || !selectedCommunity) return;
+    if (selectedCommunity.created_by !== user.id) { toast.error("Only the creator can kick"); return; }
+    if (memberUserId === user.id) { toast.error("Can't kick yourself"); return; }
+    await supabase.from("community_members").delete().eq("id", memberId);
+    await supabase.from("communities").update({ member_count: Math.max((selectedCommunity.member_count || 1) - 1, 0) }).eq("id", selectedCommunity.id);
+    toast.success("Member kicked");
+    fetchMembers(selectedCommunity.id); fetchCommunities();
+  };
+
+  const openSettings = () => {
+    if (!selectedCommunity) return;
+    fetchMembers(selectedCommunity.id);
+    setShowSettings(true);
+  };
+
   const sendMessage = async () => {
     if (!msgText.trim() || !user || !selectedCommunity) return;
     const { error } = await supabase.from("community_messages").insert({
@@ -127,6 +167,7 @@ const Communities = () => {
   const isCreator = (userId: string) => selectedCommunity?.created_by === userId;
   const isUserVerified = (uname: string) => VERIFIED_USERS.includes(uname?.toLowerCase());
   const filtered = communities.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const isMyCreation = selectedCommunity && user && selectedCommunity.created_by === user.id;
 
   return (
     <div className="p-6 max-w-6xl mx-auto h-[calc(100vh-4rem)]">
@@ -192,20 +233,25 @@ const Communities = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* Admin: pending requests */}
                   {myMemberships.get(selectedCommunity.id) === "admin" && joinRequests.length > 0 && (
                     <span className="text-xs px-2 py-1 rounded-lg bg-primary/15 text-primary flex items-center gap-1">
-                      <Bell className="w-3 h-3" /> {joinRequests.length} requests
+                      <Bell className="w-3 h-3" /> {joinRequests.length}
                     </span>
                   )}
-                  {myMemberships.has(selectedCommunity.id) && (
+                  {isMyCreation && (
+                    <button onClick={openSettings}
+                      className="p-1.5 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors" title="Community Settings">
+                      <Settings className="w-4 h-4" />
+                    </button>
+                  )}
+                  {myMemberships.has(selectedCommunity.id) && !isMyCreation && (
                     <button onClick={() => leaveCommunity(selectedCommunity.id)}
                       className="text-xs px-3 py-1 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10">Leave</button>
                   )}
                 </div>
               </div>
 
-              {/* Admin join requests panel */}
+              {/* Admin join requests */}
               {myMemberships.get(selectedCommunity.id) === "admin" && joinRequests.length > 0 && (
                 <div className="p-3 border-b border-border/30 bg-primary/5">
                   <p className="text-xs font-medium text-foreground mb-2">Pending Join Requests</p>
@@ -311,6 +357,59 @@ const Communities = () => {
                   <button onClick={() => setShowCreate(false)} className="flex-1 py-2.5 rounded-lg border border-border/50 text-muted-foreground text-sm">Cancel</button>
                   <button onClick={createCommunity} className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium">Create</button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettings && selectedCommunity && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={() => setShowSettings(false)}>
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              className="glass rounded-xl p-6 w-full max-w-md glow-box max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-primary" /> Community Settings
+                </h3>
+                <button onClick={() => setShowSettings(false)} className="p-1 rounded hover:bg-secondary/60 text-muted-foreground"><X className="w-4 h-4" /></button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="glass rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Info</p>
+                  <p className="text-sm text-foreground font-medium">{selectedCommunity.icon} {selectedCommunity.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{selectedCommunity.description || "No description"}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{selectedCommunity.member_count} members · {selectedCommunity.join_mode}</p>
+                </div>
+
+                <div className="glass rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Members ({members.length})</p>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {members.map(m => (
+                      <div key={m.id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-foreground">{m.user_id.slice(0, 8)}...</span>
+                          {m.role === "admin" && <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/15 text-primary">Admin</span>}
+                        </div>
+                        {m.user_id !== user?.id && (
+                          <button onClick={() => kickMember(m.id, m.user_id)}
+                            className="p-1 rounded bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors" title="Kick member">
+                            <UserMinus className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={deleteCommunity}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-destructive/15 text-destructive hover:bg-destructive/25 text-sm font-medium transition-colors">
+                  <Trash2 className="w-4 h-4" /> Delete Community
+                </button>
               </div>
             </motion.div>
           </motion.div>

@@ -1,26 +1,32 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Grip, X, MessageSquare, FlaskConical, Calculator as CalcIcon, Briefcase, FileText } from "lucide-react";
+import { Grip, X, MessageSquare, FlaskConical, Calculator as CalcIcon, Briefcase, FileText, Lock } from "lucide-react";
 import AIChatPanel from "./AIChatPanel";
 import AdvancedCalculator from "./AdvancedCalculator";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Tab = "amber" | "miraco" | "calc" | "project" | "summarizer";
 
 const TrinityPanel = () => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("amber");
+  const { user, isGuest } = useAuth();
 
-  const tabs: { key: Tab; label: string; icon: typeof MessageSquare }[] = [
-    { key: "amber", label: "AMBER", icon: MessageSquare },
-    { key: "miraco", label: "MIRACO", icon: FlaskConical },
-    { key: "calc", label: "Calc", icon: CalcIcon },
-    { key: "project", label: "Project", icon: Briefcase },
-    { key: "summarizer", label: "Summary", icon: FileText },
+  const isLoggedIn = !!user && !isGuest;
+
+  const tabs: { key: Tab; label: string; icon: typeof MessageSquare; needsAuth: boolean }[] = [
+    { key: "amber", label: "AMBER", icon: MessageSquare, needsAuth: true },
+    { key: "miraco", label: "MIRACO", icon: FlaskConical, needsAuth: true },
+    { key: "calc", label: "Calc", icon: CalcIcon, needsAuth: false },
+    { key: "project", label: "Project", icon: Briefcase, needsAuth: true },
+    { key: "summarizer", label: "Summary", icon: FileText, needsAuth: true },
   ];
+
+  const currentTab = tabs.find(t => t.key === tab);
+  const showLock = currentTab?.needsAuth && !isLoggedIn;
 
   return (
     <>
-      {/* Toggle — three vertical lines */}
       <button
         onClick={() => setOpen(!open)}
         className="fixed right-3 top-20 z-50 p-2 rounded-lg glass-strong hover:bg-secondary/60 transition-all group"
@@ -38,7 +44,6 @@ const TrinityPanel = () => {
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed right-0 top-0 h-full w-[380px] max-w-[90vw] z-40 glass-strong border-l border-border/30 flex flex-col"
           >
-            {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border/30">
               <h3 className="font-display text-sm font-bold tracking-wider text-foreground">AI TOOLS</h3>
               <button onClick={() => setOpen(false)} className="p-1 rounded-md hover:bg-secondary/60 text-muted-foreground">
@@ -46,7 +51,6 @@ const TrinityPanel = () => {
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="flex border-b border-border/30">
               {tabs.map((t) => (
                 <button
@@ -64,14 +68,20 @@ const TrinityPanel = () => {
               ))}
             </div>
 
-            {/* Content */}
             <div className="flex-1 overflow-hidden">
-              {tab === "amber" && <AIChatPanel functionName="amber-ai" placeholder="Ask AMBER about your homework..." />}
-              {tab === "miraco" && <AIChatPanel functionName="miraco-lly-ai" placeholder="Ask MIRACO-LLY about experiments..." />}
-              {tab === "calc" && <AdvancedCalculator />}
-              {tab === "project" && <AIChatPanel functionName="amber-ai" placeholder="Describe your project for step-by-step guidance..." />}
-              {tab === "summarizer" && (
-                <AIChatPanel functionName="amber-ai" placeholder="Paste a URL or describe content to summarize..." />
+              {showLock ? (
+                <div className="flex-1 flex items-center justify-center flex-col p-8 h-full">
+                  <Lock className="w-8 h-8 text-muted-foreground mb-3" />
+                  <p className="text-sm text-muted-foreground text-center">Sign in with a username account to use AI features</p>
+                </div>
+              ) : (
+                <>
+                  {tab === "amber" && <AIChatPanel functionName="amber-ai" placeholder="Ask AMBER about your homework..." />}
+                  {tab === "miraco" && <AIChatPanel functionName="miraco-lly-ai" placeholder="Ask MIRACO-LLY about experiments..." />}
+                  {tab === "calc" && <AdvancedCalculator />}
+                  {tab === "project" && <AIChatPanel functionName="amber-ai" placeholder="Describe your project for step-by-step guidance..." />}
+                  {tab === "summarizer" && <AIChatPanel functionName="amber-ai" placeholder="Paste a URL or describe content to summarize..." />}
+                </>
               )}
             </div>
           </motion.div>

@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, BookOpen, Clock, ArrowRight, Layers, Trophy, Video, PlayCircle, StickyNote } from "lucide-react";
+import { Sparkles, BookOpen, Clock, ArrowRight, Layers, Trophy, PlayCircle, StickyNote, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,9 +10,46 @@ interface WorkstationProps {
 
 const Workstation = ({ onFinishLesson }: WorkstationProps) => {
   const navigate = useNavigate();
-  const { profile, isGuest } = useAuth();
+  const { profile, isGuest, user } = useAuth();
   const grade = profile?.grade || (isGuest ? localStorage.getItem("membrance_profile") ? JSON.parse(localStorage.getItem("membrance_profile")!).grade : "Student" : "Student");
-  const name = profile?.display_name || "Student";
+  const name = profile?.display_name || profile?.username || "Student";
+
+  // Points cooldown: max 1 lesson finish per 5 minutes
+  const [canFinish, setCanFinish] = useState(true);
+  const [cooldownSec, setCooldownSec] = useState(0);
+
+  useEffect(() => {
+    const lastFinish = localStorage.getItem("membrance_last_lesson_finish");
+    if (lastFinish) {
+      const elapsed = Date.now() - parseInt(lastFinish);
+      const cooldown = 5 * 60 * 1000; // 5 minutes
+      if (elapsed < cooldown) {
+        setCanFinish(false);
+        const remaining = Math.ceil((cooldown - elapsed) / 1000);
+        setCooldownSec(remaining);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cooldownSec <= 0) { setCanFinish(true); return; }
+    const t = setTimeout(() => setCooldownSec(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldownSec]);
+
+  const handleFinish = () => {
+    if (!canFinish) return;
+    localStorage.setItem("membrance_last_lesson_finish", Date.now().toString());
+    setCanFinish(false);
+    setCooldownSec(5 * 60);
+    onFinishLesson();
+  };
+
+  // Build history-based quick stats
+  const watchHistory = JSON.parse(localStorage.getItem("membrance_watch_history") || "[]");
+  const searchHistory = JSON.parse(localStorage.getItem("membrance_search_history") || "[]");
+  const recentSubject = watchHistory[0]?.title?.split(" ")[0] || "Algebra";
+  const videosWatched = watchHistory.length;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -33,34 +71,50 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
             Welcome back, {name}
           </h2>
           <p className="text-muted-foreground text-base mb-8 max-w-md">
-            Continue where you left off. Complete lessons to earn points and climb the ranks.
+            {videosWatched > 0
+              ? `You've watched ${videosWatched} videos. Keep going to climb the ranks!`
+              : "Complete lessons to earn points and climb the ranks."}
           </p>
 
           <div className="grid grid-cols-2 gap-4 mb-8">
             <div className="glass rounded-xl p-4 neon-border">
               <div className="flex items-center gap-2 mb-1">
                 <BookOpen className="w-4 h-4 text-primary" />
-                <span className="text-xs text-muted-foreground">Current Lesson</span>
+                <span className="text-xs text-muted-foreground">Recent Topic</span>
               </div>
-              <p className="font-display font-semibold text-foreground">Algebra Basics</p>
+              <p className="font-display font-semibold text-foreground">{recentSubject} Basics</p>
             </div>
             <div className="glass rounded-xl p-4 neon-border">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="w-4 h-4 text-primary" />
-                <span className="text-xs text-muted-foreground">Est. Time</span>
+                <span className="text-xs text-muted-foreground">Your Points</span>
               </div>
-              <p className="font-display font-semibold text-foreground">15 minutes</p>
+              <p className="font-display font-semibold text-foreground">{profile?.points ?? 0} pts</p>
             </div>
           </div>
 
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onFinishLesson}
-            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-4 px-6 rounded-xl transition-colors duration-200 glow-box-strong text-base"
+            whileHover={canFinish ? { scale: 1.02 } : {}}
+            whileTap={canFinish ? { scale: 0.98 } : {}}
+            onClick={handleFinish}
+            disabled={!canFinish}
+            className={`w-full flex items-center justify-center gap-2 font-semibold py-4 px-6 rounded-xl transition-colors duration-200 text-base ${
+              canFinish
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground glow-box-strong"
+                : "bg-secondary/60 text-muted-foreground cursor-not-allowed"
+            }`}
           >
-            <span>Finish Lesson</span>
-            <ArrowRight className="w-5 h-5" />
+            {canFinish ? (
+              <>
+                <span>Finish Lesson (+10 pts)</span>
+                <ArrowRight className="w-5 h-5" />
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-5 h-5" />
+                <span>Cooldown {Math.floor(cooldownSec / 60)}:{(cooldownSec % 60).toString().padStart(2, "0")}</span>
+              </>
+            )}
           </motion.button>
         </div>
       </motion.div>
@@ -68,8 +122,8 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl w-full mt-6">
         {[
           { label: "Flashcards", count: "Study Cards", icon: Layers, path: "/dashboard/flashcards" },
-          { label: "Video Hub", count: "Watch & Learn", icon: PlayCircle, path: "/dashboard/videos" },
-          { label: "Study Notes", count: "Your Desk", icon: StickyNote, path: "/dashboard/notes" },
+          { label: "Video Hub", count: `${videosWatched} watched`, icon: PlayCircle, path: "/dashboard/videos" },
+          { label: "Study Notes", count: "Your Desk", icon: StickyNote, path: "/dashboard/desk" },
           { label: "Olympiad Prep", count: "Coming Soon", icon: Trophy, path: "/dashboard/olympiads" },
         ].map((item, i) => (
           <motion.div
