@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 const ICONS = ["📚", "🔬", "🧮", "🎨", "🌍", "💻", "🎵", "⚽", "🚀", "🧪"];
 const VERIFIED_USERS = ["kukkuiscute"];
+const DEV_USERS = ["kukkuiscute"];
 
 const Communities = () => {
   const { user, isGuest, profile } = useAuth();
@@ -25,7 +26,12 @@ const Communities = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
   const [myPendingRequests, setMyPendingRequests] = useState<Set<string>>(new Set());
+  const [editJoinMode, setEditJoinMode] = useState<"open" | "request">("open");
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const isDev = DEV_USERS.includes(profile?.username?.toLowerCase() || "");
+  const isUserVerified = (uname: string) => VERIFIED_USERS.includes(uname?.toLowerCase());
+  const isUserDev = (uname: string) => DEV_USERS.includes(uname?.toLowerCase());
 
   useEffect(() => { fetchCommunities(); }, []);
   useEffect(() => { if (user) { fetchMemberships(); fetchMyPendingRequests(); } }, [user]);
@@ -126,14 +132,16 @@ const Communities = () => {
     if (selectedCommunity?.id === id) setSelectedCommunity(null);
   };
 
-  const deleteCommunity = async () => {
-    if (!user || !selectedCommunity) return;
-    if (selectedCommunity.created_by !== user.id) { toast.error("Only the creator can delete"); return; }
-    // Delete all related data
-    await supabase.from("community_messages").delete().eq("community_id", selectedCommunity.id);
-    await supabase.from("community_members").delete().eq("community_id", selectedCommunity.id);
-    await supabase.from("community_join_requests").delete().eq("community_id", selectedCommunity.id);
-    await supabase.from("communities").delete().eq("id", selectedCommunity.id);
+  const deleteCommunity = async (communityToDelete?: any) => {
+    if (!user) return;
+    const target = communityToDelete || selectedCommunity;
+    if (!target) return;
+    const isCreator = target.created_by === user.id;
+    if (!isCreator && !isDev) { toast.error("Only the creator or devs can delete"); return; }
+    await supabase.from("community_messages").delete().eq("community_id", target.id);
+    await supabase.from("community_members").delete().eq("community_id", target.id);
+    await supabase.from("community_join_requests").delete().eq("community_id", target.id);
+    await supabase.from("communities").delete().eq("id", target.id);
     toast.success("Community deleted");
     setSelectedCommunity(null); setShowSettings(false);
     fetchCommunities(); fetchMemberships();
@@ -141,7 +149,8 @@ const Communities = () => {
 
   const kickMember = async (memberId: string, memberUserId: string) => {
     if (!user || !selectedCommunity) return;
-    if (selectedCommunity.created_by !== user.id) { toast.error("Only the creator can kick"); return; }
+    const isCreator = selectedCommunity.created_by === user.id;
+    if (!isCreator && !isDev) { toast.error("Only the creator or devs can kick"); return; }
     if (memberUserId === user.id) { toast.error("Can't kick yourself"); return; }
     await supabase.from("community_members").delete().eq("id", memberId);
     await supabase.from("communities").update({ member_count: Math.max((selectedCommunity.member_count || 1) - 1, 0) }).eq("id", selectedCommunity.id);
@@ -149,9 +158,21 @@ const Communities = () => {
     fetchMembers(selectedCommunity.id); fetchCommunities();
   };
 
+  const updateJoinMode = async (mode: "open" | "request") => {
+    if (!selectedCommunity || !user) return;
+    const isCreator = selectedCommunity.created_by === user.id;
+    if (!isCreator && !isDev) { toast.error("Only the creator can change settings"); return; }
+    await supabase.from("communities").update({ join_mode: mode }).eq("id", selectedCommunity.id);
+    setSelectedCommunity({ ...selectedCommunity, join_mode: mode });
+    setEditJoinMode(mode);
+    toast.success(`Join mode changed to ${mode}`);
+    fetchCommunities();
+  };
+
   const openSettings = () => {
     if (!selectedCommunity) return;
     fetchMembers(selectedCommunity.id);
+    setEditJoinMode(selectedCommunity.join_mode || "open");
     setShowSettings(true);
   };
 
@@ -165,9 +186,8 @@ const Communities = () => {
   };
 
   const isCreator = (userId: string) => selectedCommunity?.created_by === userId;
-  const isUserVerified = (uname: string) => VERIFIED_USERS.includes(uname?.toLowerCase());
   const filtered = communities.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const isMyCreation = selectedCommunity && user && selectedCommunity.created_by === user.id;
+  const canManage = selectedCommunity && user && (selectedCommunity.created_by === user.id || isDev);
 
   return (
     <div className="p-6 max-w-6xl mx-auto h-[calc(100vh-4rem)]">
@@ -238,13 +258,20 @@ const Communities = () => {
                       <Bell className="w-3 h-3" /> {joinRequests.length}
                     </span>
                   )}
-                  {isMyCreation && (
+                  {canManage && (
                     <button onClick={openSettings}
                       className="p-1.5 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors" title="Community Settings">
                       <Settings className="w-4 h-4" />
                     </button>
                   )}
-                  {myMemberships.has(selectedCommunity.id) && !isMyCreation && (
+                  {/* Dev delete shortcut */}
+                  {isDev && !canManage && (
+                    <button onClick={() => deleteCommunity(selectedCommunity)}
+                      className="p-1.5 rounded-lg hover:bg-destructive/15 text-destructive transition-colors" title="Dev: Delete Community">
+                      <Hammer className="w-4 h-4" />
+                    </button>
+                  )}
+                  {myMemberships.has(selectedCommunity.id) && !canManage && (
                     <button onClick={() => leaveCommunity(selectedCommunity.id)}
                       className="text-xs px-3 py-1 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10">Leave</button>
                   )}
@@ -278,6 +305,7 @@ const Communities = () => {
                 ) : messages.map((m: any) => {
                   const isMine = m.user_id === user?.id;
                   const verified = isUserVerified(m.username);
+                  const dev = isUserDev(m.username);
                   const creator = isCreator(m.user_id);
                   return (
                     <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
@@ -285,7 +313,8 @@ const Communities = () => {
                         <div className="flex items-center gap-1 mb-0.5">
                           <span className="text-[10px] font-medium text-primary">{m.username || "User"}</span>
                           {verified && <CheckCircle className="w-2.5 h-2.5 text-primary" />}
-                          {creator && <Hammer className="w-2.5 h-2.5 text-primary" />}
+                          {dev && <Hammer className="w-2.5 h-2.5 text-amber-500" title="Developer" />}
+                          {creator && !dev && <span className="text-[9px] px-1 py-0.5 rounded bg-primary/15 text-primary">Creator</span>}
                         </div>
                         <p className="text-sm">{m.content}</p>
                         <p className="text-[9px] text-muted-foreground mt-1">{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
@@ -345,7 +374,7 @@ const Communities = () => {
                   <div className="flex gap-2">
                     <button onClick={() => setNewJoinMode("open")}
                       className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition-all ${newJoinMode === "open" ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
-                      <Globe className="w-3.5 h-3.5" /> Open
+                      <Globe className="w-3.5 h-3.5" /> Open (Direct Join)
                     </button>
                     <button onClick={() => setNewJoinMode("request")}
                       className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition-all ${newJoinMode === "request" ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
@@ -383,7 +412,22 @@ const Communities = () => {
                   <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Info</p>
                   <p className="text-sm text-foreground font-medium">{selectedCommunity.icon} {selectedCommunity.name}</p>
                   <p className="text-xs text-muted-foreground mt-1">{selectedCommunity.description || "No description"}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{selectedCommunity.member_count} members · {selectedCommunity.join_mode}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{selectedCommunity.member_count} members</p>
+                </div>
+
+                {/* Join Mode Setting */}
+                <div className="glass rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Join Mode</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => updateJoinMode("open")}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition-all ${(editJoinMode || selectedCommunity.join_mode) === "open" ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
+                      <Globe className="w-3.5 h-3.5" /> Direct Join
+                    </button>
+                    <button onClick={() => updateJoinMode("request")}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition-all ${(editJoinMode || selectedCommunity.join_mode) === "request" ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
+                      <Lock className="w-3.5 h-3.5" /> Request Only
+                    </button>
+                  </div>
                 </div>
 
                 <div className="glass rounded-lg p-4">
@@ -406,7 +450,7 @@ const Communities = () => {
                   </div>
                 </div>
 
-                <button onClick={deleteCommunity}
+                <button onClick={() => deleteCommunity()}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-destructive/15 text-destructive hover:bg-destructive/25 text-sm font-medium transition-colors">
                   <Trash2 className="w-4 h-4" /> Delete Community
                 </button>
