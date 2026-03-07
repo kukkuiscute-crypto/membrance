@@ -313,7 +313,7 @@ const Communities = () => {
                         <div className="flex items-center gap-1 mb-0.5">
                           <span className="text-[10px] font-medium text-primary">{m.username || "User"}</span>
                           {verified && <CheckCircle className="w-2.5 h-2.5 text-primary" />}
-                          {dev && <Hammer className="w-2.5 h-2.5 text-amber-500" title="Developer" />}
+                          {dev && <span className="inline-flex" title="Developer"><Hammer className="w-2.5 h-2.5 text-amber-500" /></span>}
                           {creator && !dev && <span className="text-[9px] px-1 py-0.5 rounded bg-primary/15 text-primary">Creator</span>}
                         </div>
                         <p className="text-sm">{m.content}</p>
