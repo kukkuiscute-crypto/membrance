@@ -15,6 +15,8 @@ import CommunitiesPage from "@/pages/Communities";
 import LeaderboardPage from "@/pages/Leaderboard";
 import ProfilePage from "@/pages/Profile";
 import CalendarPlannerPage from "@/pages/CalendarPlanner";
+import StudyTrackerPage from "@/pages/StudyTracker";
+import StudyHelperPage from "@/pages/StudyHelper";
 import TrinityPanel from "@/components/TrinityPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,7 +50,6 @@ const Dashboard = () => {
     <div className="flex h-screen w-full overflow-hidden relative">
       <MouseGlow />
       <DashboardSidebar collapsed={sidebarCollapsed} onToggle={() => {
-        // On mobile, toggle the overlay sidebar
         if (window.innerWidth < 768) {
           setSidebarOpen(!sidebarOpen);
         } else {
@@ -91,6 +92,8 @@ const Dashboard = () => {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="rankings" element={<RankingsPage />} />
             <Route path="calendar" element={<CalendarPlannerPage />} />
+            <Route path="tracker" element={<StudyTrackerPage />} />
+            <Route path="helper" element={<StudyHelperPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>

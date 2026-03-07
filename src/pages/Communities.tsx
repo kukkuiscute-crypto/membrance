@@ -267,7 +267,7 @@ const Communities = () => {
                   {/* Dev delete shortcut */}
                   {isDev && !canManage && (
                     <button onClick={() => deleteCommunity(selectedCommunity)}
-                      className="p-1.5 rounded-lg hover:bg-destructive/15 text-destructive transition-colors" title="Dev: Delete Community">
+                      className="p-1.5 rounded-lg hover:bg-destructive/15 text-destructive transition-colors">
                       <Hammer className="w-4 h-4" />
                     </button>
                   )}
