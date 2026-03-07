@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import MouseGlow from "@/components/MouseGlow";
-import { User, GraduationCap, School, BookOpen } from "lucide-react";
+import { User, GraduationCap, BookOpen } from "lucide-react";
 
 const grades = ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"];
 const educationSystems = ["CBSE", "ICSE", "IB", "IGCSE", "State Board", "Cambridge", "AP", "Other"];
@@ -14,7 +14,6 @@ const Onboarding = () => {
   const [age, setAge] = useState("");
   const [grade, setGrade] = useState("");
   const [userType, setUserType] = useState<"student" | "teacher" | "">("");
-  const [schoolName, setSchoolName] = useState("");
   const [educationSystem, setEducationSystem] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -29,7 +28,7 @@ const Onboarding = () => {
     const isGuest = localStorage.getItem("membrance_guest") === "true";
 
     if (isGuest) {
-      localStorage.setItem("membrance_profile", JSON.stringify({ age, grade, userType, schoolName, educationSystem }));
+      localStorage.setItem("membrance_profile", JSON.stringify({ age, grade, userType, educationSystem }));
       navigate("/dashboard");
     } else {
       try {
@@ -39,7 +38,6 @@ const Onboarding = () => {
             age: parseInt(age),
             grade,
             user_type: userType,
-            school_name: schoolName || null,
             education_system: educationSystem || null,
           }).eq("user_id", user.id);
           if (error) throw error;
@@ -61,7 +59,7 @@ const Onboarding = () => {
         className="glass rounded-2xl p-10 w-full max-w-lg glow-box relative z-10"
       >
         <h2 className="font-display text-2xl font-bold text-foreground mb-1">Tell us about yourself</h2>
-        <p className="text-muted-foreground text-sm mb-8">Step {step} of 2 — {step === 1 ? "Personal Info" : "School/Institute"}</p>
+        <p className="text-muted-foreground text-sm mb-8">Step {step} of 2 — {step === 1 ? "Personal Info" : "Education System"}</p>
 
         {step === 1 && (
           <div className="space-y-6">
@@ -119,22 +117,10 @@ const Onboarding = () => {
 
         {step === 2 && (
           <div className="space-y-6">
-            {/* School Name */}
-            <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block flex items-center gap-1.5">
-                <School className="w-3.5 h-3.5" /> What is your School/Institute?
-              </label>
-              <input
-                value={schoolName} onChange={(e) => setSchoolName(e.target.value)}
-                placeholder="e.g. Delhi Public School"
-                className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              />
-            </div>
-
             {/* Education System */}
             <div>
               <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5" /> What system runs your school?
+                <BookOpen className="w-3.5 h-3.5" /> What institution is your school run by?
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {educationSystems.map((sys) => (

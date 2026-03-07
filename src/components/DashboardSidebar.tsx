@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Trophy, Video, BookOpen, Settings, ChevronLeft, ChevronRight, Shield, PlayCircle, FolderOpen, Users, BarChart3, User, X, Calendar } from "lucide-react";
+import { Layers, Trophy, Video, BookOpen, Settings, ChevronLeft, ChevronRight, Shield, PlayCircle, FolderOpen, Users, BarChart3, User, X, Calendar, ClipboardCheck, GraduationCap } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import RankBadge from "@/components/RankBadge";
@@ -11,6 +11,8 @@ const navItems = [
   { icon: FolderOpen, label: "Your Desk", path: "/dashboard/desk" },
   { icon: Users, label: "Communities", path: "/dashboard/communities" },
   { icon: BarChart3, label: "Leaderboard", path: "/dashboard/leaderboard" },
+  { icon: ClipboardCheck, label: "Study Tracker", path: "/dashboard/tracker" },
+  { icon: GraduationCap, label: "Study Helper", path: "/dashboard/helper" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
   { icon: Trophy, label: "Olympiads", path: "/dashboard/olympiads", badge: "Soon" },
   { icon: Video, label: "Live Classes", path: "/dashboard/live", badge: "Soon" },

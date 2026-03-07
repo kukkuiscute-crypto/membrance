@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Trophy, Star, UserPlus, UserMinus, MessageSquare, Search, CheckCircle, Shield } from "lucide-react";
+import { User, Trophy, Star, UserPlus, UserMinus, MessageSquare, Search, CheckCircle, Shield, Hammer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getRankInfo } from "@/lib/ranks";
+
+const DEV_USERS = ["kukkuiscute"];
 
 const Profile = () => {
   const { user, isGuest, profile, refreshProfile } = useAuth();
@@ -61,7 +63,8 @@ const Profile = () => {
     fetchConnections(); fetchPending();
   };
 
-  const isVerified = profile?.is_verified || profile?.username?.toLowerCase() === "kukkuiscute";
+  const isVerified = profile?.is_verified || DEV_USERS.includes(profile?.username?.toLowerCase() || "");
+  const isDev = DEV_USERS.includes(profile?.username?.toLowerCase() || "");
   const rankInfo = getRankInfo(profile?.points || 0);
 
   if (isGuest || !user) {
@@ -78,7 +81,6 @@ const Profile = () => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      {/* Tabs */}
       <div className="flex gap-2 mb-6">
         <button onClick={() => setTab("profile")}
           className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${tab === "profile" ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
@@ -92,23 +94,27 @@ const Profile = () => {
 
       {tab === "profile" ? (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-          {/* Profile Card */}
           <div className="glass rounded-xl p-6 glow-box">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/40">
                 <User className="w-8 h-8 text-primary" />
               </div>
               <div className="flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="font-display text-xl font-bold text-foreground">{profile?.display_name || profile?.username || "Student"}</h2>
                   {isVerified && (
                     <span className="flex items-center gap-0.5 text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full">
                       <CheckCircle className="w-3 h-3" /> Verified
                     </span>
                   )}
+                  {isDev && (
+                    <span className="flex items-center gap-0.5 text-xs bg-amber-500/15 text-amber-500 px-2 py-0.5 rounded-full">
+                      <Hammer className="w-3 h-3" /> Dev
+                    </span>
+                  )}
                 </div>
                 {profile?.username && <p className="text-sm text-muted-foreground">@{profile.username}</p>}
-                <p className="text-xs text-muted-foreground mt-1">{profile?.grade || "—"} · {profile?.school_name || "No school"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{profile?.grade || "—"} · {profile?.education_system || "—"}</p>
               </div>
             </div>
 
@@ -133,7 +139,6 @@ const Profile = () => {
         </motion.div>
       ) : (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-          {/* Pending Requests */}
           {pendingRequests.length > 0 && (
             <div className="glass rounded-xl p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3">Pending Requests</h3>
@@ -152,7 +157,6 @@ const Profile = () => {
             </div>
           )}
 
-          {/* Search */}
           <div className="glass rounded-xl p-4">
             <h3 className="text-sm font-semibold text-foreground mb-3">Find Students</h3>
             <div className="flex gap-2">
@@ -166,29 +170,33 @@ const Profile = () => {
             </div>
             {searchResults.length > 0 && (
               <div className="mt-3 space-y-2">
-                {searchResults.map((r, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/20 border border-border/20">
-                    <div className="w-8 h-8 rounded-full bg-secondary/60 flex items-center justify-center">
-                      <User className="w-4 h-4 text-muted-foreground" />
+                {searchResults.map((r, i) => {
+                  const rVerified = r.is_verified || DEV_USERS.includes(r.username?.toLowerCase() || "");
+                  const rDev = DEV_USERS.includes(r.username?.toLowerCase() || "");
+                  return (
+                    <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/20 border border-border/20">
+                      <div className="w-8 h-8 rounded-full bg-secondary/60 flex items-center justify-center">
+                        <User className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate flex items-center gap-1">
+                          {r.display_name || r.username || "Student"}
+                          {rVerified && <CheckCircle className="w-3 h-3 text-primary" />}
+                          {rDev && <Hammer className="w-3 h-3 text-amber-500" />}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{r.grade || "—"} · {r.points || 0} pts</p>
+                      </div>
+                      <button onClick={() => sendRequest(r.user_id)}
+                        className="flex items-center gap-1 text-xs px-3 py-1 rounded-lg bg-primary/15 text-primary font-medium hover:bg-primary/25">
+                        <UserPlus className="w-3 h-3" /> Connect
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate flex items-center gap-1">
-                        {r.display_name || r.username || "Student"}
-                        {(r.is_verified || r.username?.toLowerCase() === "kukkuiscute") && <span className="text-primary text-xs">✓</span>}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{r.grade || "—"} · {r.points || 0} pts</p>
-                    </div>
-                    <button onClick={() => sendRequest(r.user_id)}
-                      className="flex items-center gap-1 text-xs px-3 py-1 rounded-lg bg-primary/15 text-primary font-medium hover:bg-primary/25">
-                      <UserPlus className="w-3 h-3" /> Connect
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Connections List */}
           <div className="glass rounded-xl p-4">
             <h3 className="text-sm font-semibold text-foreground mb-3">Your Connections ({connections.length})</h3>
             {connections.length === 0 ? (
