@@ -32,13 +32,8 @@ const Dashboard = () => {
 
   const addPoints = useCallback(async (amount: number) => {
     if (user && !isGuest) {
-      const { data } = await supabase.from("profiles").select("points, monthly_points").eq("user_id", user.id).single();
-      if (data) {
-        await supabase.from("profiles").update({
-          points: (data.points || 0) + amount,
-          monthly_points: (data.monthly_points || 0) + amount,
-        }).eq("user_id", user.id);
-      }
+      const clampedAmount = Math.min(Math.max(Math.round(amount), 1), 50);
+      await supabase.rpc('increment_points', { amount: clampedAmount });
     }
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1000);

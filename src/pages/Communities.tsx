@@ -178,6 +178,7 @@ const Communities = () => {
 
   const sendMessage = async () => {
     if (!msgText.trim() || !user || !selectedCommunity) return;
+    if (msgText.length > 2000) { toast.error("Message too long (max 2000 characters)"); return; }
     const { error } = await supabase.from("community_messages").insert({
       community_id: selectedCommunity.id, user_id: user.id, content: msgText, username: profile?.username || profile?.display_name || "User",
     });
