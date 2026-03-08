@@ -467,6 +467,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_points: { Args: { amount: number }; Returns: undefined }
       reset_monthly_points: { Args: never; Returns: undefined }
     }
     Enums: {
