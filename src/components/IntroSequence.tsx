@@ -63,6 +63,7 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
               width: 300,
               height: 300,
               background: `radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)`,
+              willChange: "transform, opacity",
             }}
             animate={
               phase === "absorb"
@@ -146,6 +147,7 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
             style={{
               background: `radial-gradient(circle, hsl(var(--primary)), hsl(var(--primary) / 0.4))`,
               boxShadow: `0 0 60px hsl(var(--primary) / 0.6), 0 0 120px hsl(var(--primary) / 0.3)`,
+              willChange: "transform, opacity, width, height",
             }}
             initial={{ width: 16, height: 16, opacity: 0 }}
             animate={
