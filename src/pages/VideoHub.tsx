@@ -60,6 +60,19 @@ const VideoHub = () => {
   }, []);
 
   useEffect(() => { fetchSharedVideos(); if (user) fetchSaved(); }, [user]);
+
+  // Real-time subscription for shared videos
+  useEffect(() => {
+    const channel = supabase
+      .channel('shared_videos_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shared_videos' }, () => {
+        fetchSharedVideos();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Auto-refresh pool every 60s
   useEffect(() => {
     const interval = setInterval(() => setRefreshKey(k => k + 1), 60000);
     return () => clearInterval(interval);

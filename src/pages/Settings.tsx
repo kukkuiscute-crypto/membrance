@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut, Sun, Moon, UserPlus, School } from "lucide-react";
+import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut, Sun, Moon, UserPlus, School, Bot } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEMES, type ThemeKey } from "@/contexts/ThemeContext";
@@ -177,8 +177,28 @@ const Settings = () => {
         </div>
       </motion.div>
 
+      {/* Helper Bot Toggle */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="glass rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-primary" />
+            <h3 className="font-display font-semibold text-foreground">Helper Bot</h3>
+          </div>
+          <button onClick={() => {
+            const current = localStorage.getItem("membrance_helper_bot") !== "false";
+            localStorage.setItem("membrance_helper_bot", String(!current));
+            window.location.reload();
+          }}
+            className={`relative w-12 h-6 rounded-full transition-all ${localStorage.getItem("membrance_helper_bot") !== "false" ? "bg-primary/30" : "bg-secondary border border-border/50"}`}>
+            <motion.div animate={{ x: localStorage.getItem("membrance_helper_bot") !== "false" ? 24 : 2 }}
+              className="absolute top-0.5 w-5 h-5 rounded-full bg-primary shadow-lg" />
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">A friendly bot that flies around and gives you tips while studying</p>
+      </motion.div>
+
       {/* Account Management */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-3">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }} className="space-y-3">
         {user && !isGuest && (
           <button onClick={handleAddAccount}
             className="flex items-center gap-2 w-full justify-center border border-primary/30 text-primary hover:bg-primary/10 py-3 rounded-xl transition-all text-sm font-medium">
