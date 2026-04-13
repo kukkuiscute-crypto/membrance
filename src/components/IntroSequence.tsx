@@ -63,6 +63,7 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
               width: 300,
               height: 300,
               background: `radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)`,
+              willChange: "transform, opacity",
             }}
             animate={
               phase === "absorb"
@@ -88,7 +89,8 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
                   height: orb.size + 12,
                   left: "50%",
                   top: "50%",
-                  filter: `drop-shadow(0 0 ${orb.size / 2}px hsl(var(--primary) / 0.6))`,
+                  willChange: "transform, opacity",
+                  contain: "layout style paint",
                 }}
                 initial={{
                   x: Math.cos((orb.angle * Math.PI) / 180) * orb.distance,
@@ -145,6 +147,7 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
             style={{
               background: `radial-gradient(circle, hsl(var(--primary)), hsl(var(--primary) / 0.4))`,
               boxShadow: `0 0 60px hsl(var(--primary) / 0.6), 0 0 120px hsl(var(--primary) / 0.3)`,
+              willChange: "transform, opacity, width, height",
             }}
             initial={{ width: 16, height: 16, opacity: 0 }}
             animate={
