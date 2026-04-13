@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import HelperBot from "./components/HelperBot";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const AppContent = () => {
           <Route path="/dashboard/*" element={<Dashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <HelperBot currentPage={window.location.pathname.includes("auth") ? "auth" : window.location.pathname.includes("video") ? "videohub" : "dashboard"} />
       </div>
     </>
   );
