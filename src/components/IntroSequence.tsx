@@ -88,7 +88,8 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
                   height: orb.size + 12,
                   left: "50%",
                   top: "50%",
-                  filter: `drop-shadow(0 0 ${orb.size / 2}px hsl(var(--primary) / 0.6))`,
+                  willChange: "transform, opacity",
+                  contain: "layout style paint",
                 }}
                 initial={{
                   x: Math.cos((orb.angle * Math.PI) / 180) * orb.distance,
