@@ -12,6 +12,19 @@ const ICONS = [
   Ruler, Compass, Telescope, Beaker, Cpu, Dna, Rocket,
 ];
 
+const QUOTES = [
+  "Education is the most powerful weapon which you can use to change the world.",
+  "The beautiful thing about learning is that nobody can take it away from you.",
+  "Live as if you were to die tomorrow. Learn as if you were to live forever.",
+  "The mind is not a vessel to be filled, but a fire to be kindled.",
+  "An investment in knowledge pays the best interest.",
+  "The only way to do great work is to love what you do.",
+  "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+  "Knowledge is power. Information is liberating.",
+  "The expert in anything was once a beginner.",
+  "Study hard, for the well is deep, and our brains are shallow.",
+];
+
 interface Orb {
   id: number;
   size: number;
@@ -23,6 +36,7 @@ interface Orb {
 
 const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
   const [phase, setPhase] = useState<"orbs" | "absorb" | "flash" | "text" | "exit">("orbs");
+  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
 
   const generateOrbs = useCallback((): Orb[] => {
     return Array.from({ length: 20 }, (_, i) => ({
@@ -56,12 +70,11 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
           className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden"
           style={{ background: "#050505" }}
         >
-          {/* Gravity well background effect */}
+          {/* Gravity well */}
           <motion.div
             className="absolute rounded-full"
             style={{
-              width: 300,
-              height: 300,
+              width: 300, height: 300,
               background: `radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)`,
               willChange: "transform, opacity",
             }}
@@ -77,7 +90,7 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
             }
           />
 
-          {/* Floating icon orbs */}
+          {/* Orbs */}
           {orbs.map((orb) => {
             const IconComp = orb.Icon;
             return (
@@ -85,36 +98,24 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
                 key={orb.id}
                 className="absolute flex items-center justify-center"
                 style={{
-                  width: orb.size + 12,
-                  height: orb.size + 12,
-                  left: "50%",
-                  top: "50%",
+                  width: orb.size + 12, height: orb.size + 12,
+                  left: "50%", top: "50%",
                   willChange: "transform, opacity",
                   contain: "layout style paint",
                 }}
                 initial={{
                   x: Math.cos((orb.angle * Math.PI) / 180) * orb.distance,
                   y: Math.sin((orb.angle * Math.PI) / 180) * orb.distance,
-                  opacity: 0,
-                  scale: 0,
-                  rotate: 0,
+                  opacity: 0, scale: 0, rotate: 0,
                 }}
                 animate={
                   phase === "orbs"
                     ? {
                         x: Math.cos((orb.angle * Math.PI) / 180) * orb.distance,
                         y: Math.sin((orb.angle * Math.PI) / 180) * orb.distance,
-                        opacity: [0, 0.9, 0.6, 0.9],
-                        scale: [0, 1.1, 0.95, 1],
-                        rotate: [0, 360],
+                        opacity: [0, 0.9, 0.6, 0.9], scale: [0, 1.1, 0.95, 1], rotate: [0, 360],
                       }
-                    : {
-                        x: 0,
-                        y: 0,
-                        opacity: 0,
-                        scale: 0,
-                        rotate: 720,
-                      }
+                    : { x: 0, y: 0, opacity: 0, scale: 0, rotate: 720 }
                 }
                 transition={
                   phase === "orbs"
@@ -123,25 +124,15 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
                         scale: { duration: 0.8, delay: orb.delay },
                         rotate: { duration: 6 + orb.delay * 3, repeat: Infinity, ease: "linear" },
                       }
-                    : {
-                        duration: 1.0 + orb.delay * 0.4,
-                        ease: [0.4, 0, 0.2, 1],
-                      }
+                    : { duration: 1.0 + orb.delay * 0.4, ease: [0.4, 0, 0.2, 1] }
                 }
               >
-                <IconComp
-                  className="text-primary"
-                  style={{
-                    width: orb.size,
-                    height: orb.size,
-                    opacity: 0.85,
-                  }}
-                />
+                <IconComp className="text-primary" style={{ width: orb.size, height: orb.size, opacity: 0.85 }} />
               </motion.div>
             );
           })}
 
-          {/* Central gravity orb */}
+          {/* Central orb */}
           <motion.div
             className="absolute rounded-full"
             style={{
@@ -151,31 +142,20 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
             }}
             initial={{ width: 16, height: 16, opacity: 0 }}
             animate={
-              phase === "orbs"
-                ? { width: 20, height: 20, opacity: [0, 1], scale: [0.8, 1.1, 1] }
-                : phase === "absorb"
-                ? {
-                    width: 60,
-                    height: 60,
-                    opacity: 1,
-                    boxShadow: `0 0 120px hsl(var(--primary) / 0.9), 0 0 250px hsl(var(--primary) / 0.5)`,
-                  }
-                : phase === "flash"
-                ? { width: 4000, height: 4000, opacity: [1, 1, 0] }
-                : { width: 0, height: 0, opacity: 0 }
+              phase === "orbs" ? { width: 20, height: 20, opacity: [0, 1], scale: [0.8, 1.1, 1] }
+              : phase === "absorb" ? { width: 60, height: 60, opacity: 1 }
+              : phase === "flash" ? { width: 4000, height: 4000, opacity: [1, 1, 0] }
+              : { width: 0, height: 0, opacity: 0 }
             }
             transition={
-              phase === "orbs"
-                ? { duration: 0.8, scale: { duration: 2, repeat: Infinity, ease: "easeInOut" } }
-                : phase === "absorb"
-                ? { duration: 1.4, ease: "easeInOut" }
-                : phase === "flash"
-                ? { duration: 0.35, ease: "easeOut" }
-                : { duration: 0.2 }
+              phase === "orbs" ? { duration: 0.8, scale: { duration: 2, repeat: Infinity, ease: "easeInOut" } }
+              : phase === "absorb" ? { duration: 1.4, ease: "easeInOut" }
+              : phase === "flash" ? { duration: 0.35, ease: "easeOut" }
+              : { duration: 0.2 }
             }
           />
 
-          {/* Lightning strike overlay */}
+          {/* Flash */}
           <AnimatePresence>
             {phase === "flash" && (
               <>
@@ -184,43 +164,27 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
                   animate={{ opacity: [0, 1, 0.6, 1, 0] }}
                   transition={{ duration: 0.4, times: [0, 0.08, 0.15, 0.25, 1] }}
                   className="absolute inset-0 z-20"
-                  style={{
-                    background: `linear-gradient(135deg, hsl(var(--primary) / 0.8), white 40%, white 60%, hsl(var(--primary) / 0.6))`,
-                  }}
+                  style={{ background: `linear-gradient(135deg, hsl(var(--primary) / 0.8), white 40%, white 60%, hsl(var(--primary) / 0.6))` }}
                 />
-                {/* Lightning bolt SVG */}
-                <motion.svg
-                  className="absolute z-25 w-full h-full"
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                  initial={{ opacity: 0, pathLength: 0 }}
-                  animate={{ opacity: [0, 1, 1, 0], pathLength: [0, 1] }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <motion.path
-                    d="M 20 0 L 55 40 L 40 42 L 80 100"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="0.8"
-                    style={{ filter: "drop-shadow(0 0 8px white)" }}
-                  />
+                <motion.svg className="absolute z-25 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none"
+                  initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }} transition={{ duration: 0.3 }}>
+                  <motion.path d="M 20 0 L 55 40 L 40 42 L 80 100" fill="none" stroke="white" strokeWidth="0.8"
+                    style={{ filter: "drop-shadow(0 0 8px white)" }} />
                 </motion.svg>
               </>
             )}
           </AnimatePresence>
 
-          {/* MEMBRANCE text reveal */}
+          {/* Text + Quote */}
           <AnimatePresence>
             {phase === "text" && (
-              <motion.div className="absolute z-30 flex flex-col items-center">
+              <motion.div className="absolute z-30 flex flex-col items-center px-4">
                 <motion.h1
                   initial={{ opacity: 0, letterSpacing: "0em", scale: 1.6, y: 10 }}
                   animate={{ opacity: 1, letterSpacing: "0.4em", scale: 1, y: 0 }}
                   transition={{ duration: 1.4, ease: "easeOut" }}
                   className="font-display text-5xl md:text-7xl font-bold text-foreground"
-                  style={{
-                    textShadow: `0 0 40px hsl(var(--primary) / 0.9), 0 0 80px hsl(var(--primary) / 0.5), 0 0 160px hsl(var(--primary) / 0.2)`,
-                  }}
+                  style={{ textShadow: `0 0 40px hsl(var(--primary) / 0.9), 0 0 80px hsl(var(--primary) / 0.5)` }}
                 >
                   MEMBRANCE
                 </motion.h1>
@@ -233,11 +197,11 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
                 />
                 <motion.p
                   initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 0.6, y: 0 }}
-                  transition={{ delay: 0.8, duration: 0.6 }}
-                  className="text-sm text-muted-foreground mt-3 tracking-[0.3em] uppercase font-display"
+                  animate={{ opacity: 0.7, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.6 }}
+                  className="text-sm text-muted-foreground mt-4 max-w-md text-center italic leading-relaxed"
                 >
-                  Knowledge Awaits
+                  "{quote}"
                 </motion.p>
               </motion.div>
             )}
