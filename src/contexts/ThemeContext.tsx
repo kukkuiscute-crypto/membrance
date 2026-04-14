@@ -14,7 +14,13 @@ export type ThemeKey =
   | "midnight-white"
   | "sakura-pink"
   | "famous-indigo"
-  | "neon-mode";
+  | "neon-mode"
+  | "ocean-deep"
+  | "cyber-violet"
+  | "ruby-flame"
+  | "arctic-frost"
+  | "ember-glow"
+  | "forest-moss";
 
 export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "midnight-dark", label: "Midnight Dark", hue: "262 83% 65%" },
