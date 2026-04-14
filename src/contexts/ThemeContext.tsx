@@ -14,7 +14,13 @@ export type ThemeKey =
   | "midnight-white"
   | "sakura-pink"
   | "famous-indigo"
-  | "neon-mode";
+  | "neon-mode"
+  | "ocean-deep"
+  | "cyber-violet"
+  | "ruby-flame"
+  | "arctic-frost"
+  | "ember-glow"
+  | "forest-moss";
 
 export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "midnight-dark", label: "Midnight Dark", hue: "262 83% 65%" },
@@ -31,6 +37,12 @@ export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "sakura-pink", label: "Sakura Pink", hue: "330 70% 65%" },
   { key: "famous-indigo", label: "Famous Indigo", hue: "240 70% 55%" },
   { key: "neon-mode", label: "Neon Mode", hue: "120 100% 50%" },
+  { key: "ocean-deep", label: "Ocean Deep", hue: "195 85% 45%" },
+  { key: "cyber-violet", label: "Cyber Violet", hue: "280 90% 60%" },
+  { key: "ruby-flame", label: "Ruby Flame", hue: "0 85% 55%" },
+  { key: "arctic-frost", label: "Arctic Frost", hue: "200 60% 70%" },
+  { key: "ember-glow", label: "Ember Glow", hue: "20 90% 50%" },
+  { key: "forest-moss", label: "Forest Moss", hue: "120 45% 35%" },
 ];
 
 export type AppearanceMode = "dark" | "light";

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Play, Search, Clock, Plus, X, Bookmark, BookmarkCheck, RefreshCw, ChevronUp, History, Eye } from "lucide-react";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { Play, Search, Clock, Plus, X, Bookmark, BookmarkCheck, RefreshCw, ChevronUp, History, Eye, Pause, Volume2, VolumeX, Maximize, Minimize, GripHorizontal } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ const VideoHub = () => {
   const { profile, isGuest, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All");
+  const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
@@ -31,10 +32,11 @@ const VideoHub = () => {
     JSON.parse(localStorage.getItem("membrance_watch_history") || "[]")
   );
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const userGrade = profile?.grade || "";
 
-  // Build a shuffled infinite pool from library
+  // Build shuffled pool (no auto-refresh timer)
   const infinitePool = useMemo(() => {
     const base = tab === "recommended" ? getRecommendedVideos(userGrade, VIDEO_LIBRARY.length) : [...VIDEO_LIBRARY];
     const pool: Video[] = [];
@@ -72,12 +74,6 @@ const VideoHub = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Auto-refresh pool every 60s
-  useEffect(() => {
-    const interval = setInterval(() => setRefreshKey(k => k + 1), 60000);
-    return () => clearInterval(interval);
-  }, []);
-
   const fetchSharedVideos = async () => {
     const { data } = await supabase.from("shared_videos").select("*").order("created_at", { ascending: false }).limit(50);
     if (data) setSharedVideos(data);
@@ -104,7 +100,9 @@ const VideoHub = () => {
   };
 
   const handlePlay = (video: Video) => {
+    setPlayingVideo(video);
     setPlayingId(video.youtubeId);
+    setIsMinimized(false);
     addToWatchHistory(video);
   };
 
@@ -118,7 +116,6 @@ const VideoHub = () => {
   const toggleSave = useCallback(async (video: Video) => {
     if (!user && !isGuest) { toast.error("Sign in to save videos"); return; }
     if (!user) {
-      // localStorage save for guests
       const saved = JSON.parse(localStorage.getItem("membrance_saved_videos") || "[]");
       const exists = saved.some((s: any) => s.youtubeId === video.youtubeId);
       if (exists) {
@@ -185,7 +182,6 @@ const VideoHub = () => {
 
   const scrollToTop = () => { scrollTopRef.current?.scrollIntoView({ behavior: "smooth" }); };
 
-  // Load guest saved on mount
   useEffect(() => {
     if (!user) {
       const saved = JSON.parse(localStorage.getItem("membrance_saved_videos") || "[]");
@@ -198,11 +194,16 @@ const VideoHub = () => {
       transition={{ delay: Math.min(index * 0.02, 0.3) }}
       className="glass rounded-xl overflow-hidden group cursor-pointer hover:neon-border-active transition-all">
       <div className="relative aspect-video bg-secondary/40" onClick={() => handlePlay(video)}>
-        <img src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} alt={video.title}
-          className="w-full h-full object-cover" loading="lazy" />
+        <img
+          src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
+          alt={video.title}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${video.youtubeId}/default.jpg`; }}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="w-11 h-11 rounded-full bg-primary/90 flex items-center justify-center shadow-lg">
+          <div className="w-11 h-11 rounded-full bg-primary/90 flex items-center justify-center shadow-lg glow-box">
             <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
           </div>
         </div>
@@ -232,8 +233,10 @@ const VideoHub = () => {
   const filteredSuggestions = searchHistory.filter(h => h.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto min-h-screen">
       <div ref={scrollTopRef} />
+
+      {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="font-display text-2xl font-bold text-foreground">Video Hub</h2>
@@ -251,31 +254,12 @@ const VideoHub = () => {
         </div>
       </div>
 
-      {/* Player */}
-      <AnimatePresence>
-        {playingId && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="glass rounded-xl overflow-hidden mb-5 neon-border-active">
-            <div className="relative aspect-video w-full">
-              <iframe src={`https://www.youtube.com/embed/${playingId}?autoplay=1&rel=0`}
-                className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-            </div>
-            <div className="flex items-center justify-between p-2.5">
-              <span className="text-xs text-muted-foreground">Playing now</span>
-              <button onClick={() => setPlayingId(null)} className="flex items-center gap-1 px-3 py-1 rounded-lg bg-destructive/20 text-destructive text-xs font-medium hover:bg-destructive/30">
-                <X className="w-3 h-3" /> Close
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Tabs */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
         {(["recommended", "library", "shared", "history"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${tab === t ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
-            {t === "recommended" ? `⭐ For You` : t === "library" ? `📚 All` : t === "shared" ? `🌐 Community (${sharedVideos.length})` : `🕐 History`}
+            className={`px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${tab === t ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
+            {t === "recommended" ? "⭐ For You" : t === "library" ? "📚 All" : t === "shared" ? `🌐 Community (${sharedVideos.length})` : "🕐 History"}
           </button>
         ))}
       </div>
@@ -291,7 +275,6 @@ const VideoHub = () => {
             onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
             className="w-full bg-secondary/60 border border-border/50 rounded-lg pl-10 pr-4 py-2.5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="Search videos, channels, topics..." />
-          {/* Search suggestions dropdown */}
           {showSearchSuggestions && filteredSuggestions.length > 0 && searchQuery && (
             <div className="absolute top-full left-0 right-0 mt-1 glass rounded-lg border border-border/30 z-20 overflow-hidden">
               {filteredSuggestions.map((s, i) => (
@@ -322,7 +305,7 @@ const VideoHub = () => {
               <p className="text-muted-foreground text-sm">No watch history yet. Start watching videos!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {watchHistory.map((h, i) => {
                 const video = VIDEO_LIBRARY.find(v => v.youtubeId === h.youtubeId);
                 if (!video) return null;
@@ -352,7 +335,7 @@ const VideoHub = () => {
         </div>
       ) : tab !== "shared" ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {displayVideos.map((video, i) => <VideoCard key={video.id} video={video} index={i} />)}
             {displayVideos.length === 0 && (
               <div className="col-span-full glass rounded-xl p-10 text-center">
@@ -369,16 +352,18 @@ const VideoHub = () => {
           )}
         </>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredShared.map((video: any, i: number) => {
             const ytId = extractYoutubeId(video.youtube_url);
             if (!ytId) return null;
             return (
               <motion.div key={video.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }} onClick={() => setPlayingId(ytId)}
+                transition={{ delay: i * 0.03 }}
+                onClick={() => { setPlayingId(ytId); setPlayingVideo({ id: video.id, title: video.title, subject: video.subject || "General", grade: video.grade || "", duration: "", youtubeId: ytId, channel: "Community", points: 0 }); setIsMinimized(false); }}
                 className="glass rounded-xl overflow-hidden group cursor-pointer hover:neon-border-active transition-all">
                 <div className="relative aspect-video bg-secondary/40">
-                  <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt={video.title} className="w-full h-full object-cover" loading="lazy" />
+                  <img src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`} alt={video.title} className="w-full h-full object-cover" loading="lazy"
+                    onError={(e) => { (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${ytId}/default.jpg`; }} />
                   <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-11 h-11 rounded-full bg-primary/90 flex items-center justify-center"><Play className="w-5 h-5 text-primary-foreground ml-0.5" /></div>
@@ -410,6 +395,58 @@ const VideoHub = () => {
           <ChevronUp className="w-5 h-5" />
         </motion.button>
       )}
+
+      {/* Draggable Video Player Popup */}
+      <AnimatePresence>
+        {playingId && playingVideo && (
+          <motion.div
+            drag
+            dragMomentum={false}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className={`fixed z-50 glass rounded-xl overflow-hidden neon-border-active glow-box shadow-2xl ${isMinimized ? "w-[320px] h-auto" : "w-[90vw] max-w-[720px] h-auto"}`}
+            style={{ bottom: 20, right: 20, cursor: "move" }}
+          >
+            {/* Drag handle */}
+            <div className="flex items-center justify-between px-3 py-2 bg-card/80 border-b border-border/30">
+              <div className="flex items-center gap-2 min-w-0">
+                <GripHorizontal className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-xs text-foreground font-medium truncate">{playingVideo.title}</span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => setIsMinimized(!isMinimized)}
+                  className="p-1 rounded hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors">
+                  {isMinimized ? <Maximize className="w-3.5 h-3.5" /> : <Minimize className="w-3.5 h-3.5" />}
+                </button>
+                <button onClick={() => { setPlayingId(null); setPlayingVideo(null); }}
+                  className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            {!isMinimized && (
+              <div className="relative aspect-video w-full">
+                <iframe src={`https://www.youtube.com/embed/${playingId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=0`}
+                  className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              </div>
+            )}
+            {/* Custom bottom bar */}
+            <div className="flex items-center justify-between px-3 py-2 bg-card/80 border-t border-border/30">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">{playingVideo.channel}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{playingVideo.subject}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button onClick={() => toggleSave(playingVideo)}
+                  className="p-1 rounded hover:bg-secondary/60 transition-colors">
+                  {savedIds.has(playingVideo.youtubeId) ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" /> : <Bookmark className="w-3.5 h-3.5 text-muted-foreground" />}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Share Modal */}
       <AnimatePresence>
