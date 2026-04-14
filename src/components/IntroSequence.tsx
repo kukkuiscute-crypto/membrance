@@ -55,8 +55,8 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
     const t1 = setTimeout(() => setPhase("absorb"), 2000);
     const t2 = setTimeout(() => setPhase("flash"), 3600);
     const t3 = setTimeout(() => setPhase("text"), 3900);
-    const t4 = setTimeout(() => setPhase("exit"), 5800);
-    const t5 = setTimeout(() => onComplete(), 6500);
+    const t4 = setTimeout(() => setPhase("exit"), 8500);
+    const t5 = setTimeout(() => onComplete(), 9200);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, [onComplete]);
 
