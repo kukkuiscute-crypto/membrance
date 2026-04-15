@@ -1,9 +1,9 @@
 # MEMBRANCE Notice & Update board
-# UPD1:
+# UPD1.1:
 a few compatibility fixes and added helper bot improved frame rates and optimized ui & website overall
-# UPD2:
+# UPD1.2:
 massive overhaul revamped video hub optimized to target 240 FPS revamped helper bot added 6 new themes
-# UPD3:
+# UPD1.3:
 Massive changes towards the website added more videos in video hub added 50+ channels fixed a few bugs revamped the helper bot added new helper bot interactions 
 1:- quick calculation (coming soon)
 2:- video summary (coming soon)
