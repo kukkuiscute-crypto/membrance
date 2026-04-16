@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Search, Clock, Plus, X, Bookmark, BookmarkCheck, RefreshCw, ChevronUp, History, Eye, Maximize, Minimize, GripHorizontal, Expand, Shrink, Volume2, VolumeX, SkipForward, SkipBack, Gauge } from "lucide-react";
+import { Play, Search, Clock, Plus, X, Bookmark, BookmarkCheck, RefreshCw, ChevronUp, History, Eye, Maximize, Minimize, GripHorizontal, Expand, Shrink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
