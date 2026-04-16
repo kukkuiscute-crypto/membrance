@@ -475,48 +475,13 @@ const VideoHub = () => {
 
             {/* Video */}
             {!isMinimized && (
-              <div className={`relative w-full ${isFullscreen ? "h-[calc(100vh-80px)]" : "aspect-video"} group/player`}>
+              <div className={`relative w-full ${isFullscreen ? "h-[calc(100vh-80px)]" : "aspect-video"}`}>
                 <iframe
-                  src={`https://www.youtube.com/embed/${playingId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&controls=0&showinfo=0`}
+                  src={`https://www.youtube.com/embed/${playingId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3`}
                   className="absolute inset-0 w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                   allowFullScreen
                 />
-                {/* Custom overlay controls */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent opacity-0 group-hover/player:opacity-100 transition-opacity duration-300 px-3 py-2">
-                  {/* Progress bar placeholder */}
-                  <div className="w-full h-1 bg-secondary/60 rounded-full mb-2 cursor-pointer group/bar">
-                    <div className="h-full bg-primary rounded-full w-1/3 relative">
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <button className="p-1 rounded hover:bg-secondary/40 text-foreground transition-colors" title="Skip back">
-                        <SkipBack className="w-3.5 h-3.5" />
-                      </button>
-                      <button className="p-1.5 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors" title="Play/Pause">
-                        <Play className="w-4 h-4" />
-                      </button>
-                      <button className="p-1 rounded hover:bg-secondary/40 text-foreground transition-colors" title="Skip forward">
-                        <SkipForward className="w-3.5 h-3.5" />
-                      </button>
-                      <button className="p-1 rounded hover:bg-secondary/40 text-foreground transition-colors" title="Volume">
-                        <Volume2 className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="text-[10px] text-muted-foreground ml-1">0:00 / {playingVideo.duration || "--:--"}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button className="px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors font-mono" title="Playback speed">
-                        1x
-                      </button>
-                      <button onClick={toggleFullscreen}
-                        className="p-1 rounded hover:bg-secondary/40 text-foreground transition-colors" title="Fullscreen">
-                        {isFullscreen ? <Shrink className="w-3.5 h-3.5" /> : <Expand className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
