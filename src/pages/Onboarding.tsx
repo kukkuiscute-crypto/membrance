@@ -61,17 +61,6 @@ const Onboarding = () => {
 
         {step === 1 && (
           <div className="space-y-6">
-            {/* Age */}
-            <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">How old are you?</label>
-              <input
-                type="number" min={5} max={100} value={age}
-                onChange={(e) => setAge(e.target.value)}
-                placeholder="Enter your age"
-                className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              />
-            </div>
-
             {/* Grade */}
             <div>
               <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">What grade are you in?</label>
@@ -106,8 +95,8 @@ const Onboarding = () => {
 
             <motion.button
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { if (!age || !grade || !userType) { toast.error("Please fill all fields"); return; } setStep(2); }}
-              disabled={!age || !grade || !userType}
+              onClick={() => { if (!grade || !userType) { toast.error("Please fill all fields"); return; } setStep(2); }}
+              disabled={!grade || !userType}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-xl transition-colors glow-box-strong disabled:opacity-50 mt-4"
             >Next</motion.button>
           </div>
