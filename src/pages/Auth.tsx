@@ -35,7 +35,9 @@ const Auth = () => {
     try {
       if (!username || !password) throw new Error("Username and password required");
       if (username.length < 3) throw new Error("Username must be at least 3 characters");
-      const fakeEmail = `${username.toLowerCase().replace(/[^a-z0-9]/g, "")}@membrance.local`;
+      if (!/^[A-Za-z0-9]+$/.test(username)) throw new Error("Username: English letters & numbers only — no spaces, symbols, or emojis");
+      if (!/[A-Z]/.test(username)) throw new Error("Username must contain at least one uppercase letter");
+      const fakeEmail = `${username.toLowerCase()}@membrance.local`;
 
       if (mode === "signup") {
         const available = await checkUsernameAvailable(username);
