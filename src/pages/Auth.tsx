@@ -35,7 +35,9 @@ const Auth = () => {
     try {
       if (!username || !password) throw new Error("Username and password required");
       if (username.length < 3) throw new Error("Username must be at least 3 characters");
-      const fakeEmail = `${username.toLowerCase().replace(/[^a-z0-9]/g, "")}@membrance.local`;
+      if (!/^[A-Za-z0-9]+$/.test(username)) throw new Error("Username: English letters & numbers only — no spaces, symbols, or emojis");
+      if (!/[A-Z]/.test(username)) throw new Error("Username must contain at least one uppercase letter");
+      const fakeEmail = `${username.toLowerCase()}@membrance.local`;
 
       if (mode === "signup") {
         const available = await checkUsernameAvailable(username);
@@ -107,8 +109,10 @@ const Auth = () => {
               <AtSign className="w-3 h-3" /> Username
             </label>
             <input type="text" required value={username} onChange={(e) => setUsername(e.target.value)} minLength={3}
+              pattern="[A-Za-z0-9]+"
               className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              placeholder="coolstudent123" />
+              placeholder="CoolStudent123" />
+            <p className="text-[10px] text-muted-foreground mt-1">English letters & numbers only · at least 1 uppercase · no spaces/symbols</p>
           </div>
           <div>
             <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Password</label>

@@ -11,7 +11,6 @@ const educationSystems = ["CBSE", "ICSE", "IB", "IGCSE", "State Board", "Cambrid
 
 const Onboarding = () => {
   const [step, setStep] = useState(1);
-  const [age, setAge] = useState("");
   const [grade, setGrade] = useState("");
   const [userType, setUserType] = useState<"student" | "teacher" | "">("");
   const [educationSystem, setEducationSystem] = useState("");
@@ -19,7 +18,7 @@ const Onboarding = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
-    if (!age || !grade || !userType) {
+    if (!grade || !userType) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -28,14 +27,13 @@ const Onboarding = () => {
     const isGuest = localStorage.getItem("membrance_guest") === "true";
 
     if (isGuest) {
-      localStorage.setItem("membrance_profile", JSON.stringify({ age, grade, userType, educationSystem }));
+      localStorage.setItem("membrance_profile", JSON.stringify({ grade, userType, educationSystem }));
       navigate("/dashboard");
     } else {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { error } = await supabase.from("profiles").update({
-            age: parseInt(age),
             grade,
             user_type: userType,
             education_system: educationSystem || null,
@@ -63,17 +61,6 @@ const Onboarding = () => {
 
         {step === 1 && (
           <div className="space-y-6">
-            {/* Age */}
-            <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">How old are you?</label>
-              <input
-                type="number" min={5} max={100} value={age}
-                onChange={(e) => setAge(e.target.value)}
-                placeholder="Enter your age"
-                className="w-full bg-secondary/60 border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              />
-            </div>
-
             {/* Grade */}
             <div>
               <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">What grade are you in?</label>
@@ -108,8 +95,8 @@ const Onboarding = () => {
 
             <motion.button
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { if (!age || !grade || !userType) { toast.error("Please fill all fields"); return; } setStep(2); }}
-              disabled={!age || !grade || !userType}
+              onClick={() => { if (!grade || !userType) { toast.error("Please fill all fields"); return; } setStep(2); }}
+              disabled={!grade || !userType}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-xl transition-colors glow-box-strong disabled:opacity-50 mt-4"
             >Next</motion.button>
           </div>
