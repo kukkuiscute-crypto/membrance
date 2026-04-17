@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut, Sun, Moon, UserPlus, School, Bot } from "lucide-react";
+import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut, Sun, Moon, UserPlus, School, Bot, Download, Apple, Smartphone, Monitor } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEMES, type ThemeKey } from "@/contexts/ThemeContext";
@@ -195,6 +195,37 @@ const Settings = () => {
           </button>
         </div>
         <p className="text-xs text-muted-foreground mt-2">A friendly bot that flies around and gives you tips while studying</p>
+      </motion.div>
+
+      {/* Downloads */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.20 }} className="glass rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Download className="w-4 h-4 text-primary" />
+          <h3 className="font-display font-semibold text-foreground">Download MEMBRANCE App</h3>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">Install MEMBRANCE on your device for the best experience. All builds are auto-generated from GitHub Releases.</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {[
+            { label: "Windows x64", icon: Monitor, file: "MEMBRANCE-win32-x64.zip" },
+            { label: "Windows ARM64", icon: Monitor, file: "MEMBRANCE-win32-arm64.zip" },
+            { label: "macOS Intel", icon: Apple, file: "MEMBRANCE-darwin-x64.zip" },
+            { label: "macOS Apple Silicon", icon: Apple, file: "MEMBRANCE-darwin-arm64.zip" },
+            { label: "Linux x64", icon: Monitor, file: "MEMBRANCE-linux-x64.tar.gz" },
+            { label: "Linux ARM64", icon: Monitor, file: "MEMBRANCE-linux-arm64.tar.gz" },
+            { label: "Android APK", icon: Smartphone, file: "MEMBRANCE-android.apk" },
+            { label: "iOS (Coming soon)", icon: Apple, file: null },
+          ].map((d) => (
+            <a key={d.label} href={d.file ? `https://github.com/membrance/membrance/releases/latest/download/${d.file}` : "#"}
+              onClick={(e) => !d.file && e.preventDefault()}
+              target="_blank" rel="noopener noreferrer"
+              className={`flex items-center gap-2 p-3 rounded-lg text-xs transition-all border ${d.file ? "bg-secondary/40 text-foreground hover:bg-primary/10 hover:border-primary/40 border-border/30" : "bg-secondary/20 text-muted-foreground border-border/20 cursor-not-allowed opacity-60"}`}>
+              <d.icon className="w-4 h-4 shrink-0" />
+              <span className="truncate">{d.label}</span>
+            </a>
+          ))}
+        </div>
+        <a href="https://github.com/membrance/membrance/releases" target="_blank" rel="noopener noreferrer"
+          className="text-xs text-primary hover:underline mt-3 inline-block">All releases →</a>
       </motion.div>
 
       {/* Account Management */}
