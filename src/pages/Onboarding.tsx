@@ -11,7 +11,6 @@ const educationSystems = ["CBSE", "ICSE", "IB", "IGCSE", "State Board", "Cambrid
 
 const Onboarding = () => {
   const [step, setStep] = useState(1);
-  const [age, setAge] = useState("");
   const [grade, setGrade] = useState("");
   const [userType, setUserType] = useState<"student" | "teacher" | "">("");
   const [educationSystem, setEducationSystem] = useState("");
@@ -19,7 +18,7 @@ const Onboarding = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
-    if (!age || !grade || !userType) {
+    if (!grade || !userType) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -28,14 +27,13 @@ const Onboarding = () => {
     const isGuest = localStorage.getItem("membrance_guest") === "true";
 
     if (isGuest) {
-      localStorage.setItem("membrance_profile", JSON.stringify({ age, grade, userType, educationSystem }));
+      localStorage.setItem("membrance_profile", JSON.stringify({ grade, userType, educationSystem }));
       navigate("/dashboard");
     } else {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { error } = await supabase.from("profiles").update({
-            age: parseInt(age),
             grade,
             user_type: userType,
             education_system: educationSystem || null,
