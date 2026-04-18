@@ -20,7 +20,19 @@ export type ThemeKey =
   | "ruby-flame"
   | "arctic-frost"
   | "ember-glow"
-  | "forest-moss";
+  | "forest-moss"
+  | "galaxy-purple"
+  | "solar-flare"
+  | "midnight-rose"
+  | "emerald-mint"
+  | "crimson-night"
+  | "lavender-dream"
+  | "tangerine-pop"
+  | "deep-space"
+  | "neon-pink"
+  | "honey-amber"
+  | "icy-mint"
+  | "royal-plum";
 
 export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "midnight-dark", label: "Midnight Dark", hue: "262 83% 65%" },
