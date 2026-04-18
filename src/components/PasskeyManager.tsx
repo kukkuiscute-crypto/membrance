@@ -44,8 +44,9 @@ const PasskeyManager = () => {
         displayName,
       });
 
+      const uaData = (navigator as any).userAgentData;
       const deviceLabel =
-        navigator.userAgentData?.platform ??
+        uaData?.platform ??
         (navigator.userAgent.match(/\(([^)]+)\)/)?.[1] ?? "This device");
 
       const { error } = await supabase.from("passkey_credentials").insert({
