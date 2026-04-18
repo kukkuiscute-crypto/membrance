@@ -55,6 +55,18 @@ export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "arctic-frost", label: "Arctic Frost", hue: "200 60% 70%" },
   { key: "ember-glow", label: "Ember Glow", hue: "20 90% 50%" },
   { key: "forest-moss", label: "Forest Moss", hue: "120 45% 35%" },
+  { key: "galaxy-purple", label: "Galaxy Purple", hue: "270 75% 55%" },
+  { key: "solar-flare", label: "Solar Flare", hue: "40 100% 55%" },
+  { key: "midnight-rose", label: "Midnight Rose", hue: "340 75% 55%" },
+  { key: "emerald-mint", label: "Emerald Mint", hue: "160 70% 45%" },
+  { key: "crimson-night", label: "Crimson Night", hue: "350 90% 50%" },
+  { key: "lavender-dream", label: "Lavender Dream", hue: "260 60% 70%" },
+  { key: "tangerine-pop", label: "Tangerine Pop", hue: "25 95% 55%" },
+  { key: "deep-space", label: "Deep Space", hue: "230 80% 55%" },
+  { key: "neon-pink", label: "Neon Pink", hue: "320 100% 60%" },
+  { key: "honey-amber", label: "Honey Amber", hue: "38 90% 50%" },
+  { key: "icy-mint", label: "Icy Mint", hue: "170 80% 60%" },
+  { key: "royal-plum", label: "Royal Plum", hue: "295 65% 45%" },
 ];
 
 export type AppearanceMode = "dark" | "light";
