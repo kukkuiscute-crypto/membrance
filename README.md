@@ -15,7 +15,7 @@ added 14 new themes build verified clean. auto-publish desktop installers (Win/M
 # Membrance: Elevating Academic Excellence
 Membrance is a premier, all-in-one digital study ecosystem designed to empower K-12 students with a high-performance workspace for academic mastery. Featuring a sophisticated, professional dark-themed dashboard, the platform integrates essential productivity modules—including a dynamic timetable and advanced focus tools—into a seamless, responsive interface optimized for mobile and tablet devices. Engineered for the modern, tech-savvy learner, Membrance transcends traditional organization by offering a minimalist, distraction-free environment that fosters deep work and disciplined routines. By merging aesthetic elegance with functional precision, it serves as a comprehensive hub where students can track their progress, manage complex schedules, and optimize their daily output, ultimately setting a new standard for digital student sanctuaries in the modern age.
 # ✧ 𝗞𝗲𝘆 𝗙𝗲𝗮𝘁𝘂𝗿𝗲𝘀
-### 𝐃𝐲𝐧𝐚𝐦𝐢𝐜 𝐀𝐜𝐚𝐝𝐞𝐦𝐢𝐜 𝐒𝐜𝐡𝐞𝐝𝐮𝐥𝐞 — 
+###### 𝐃𝐲𝐧𝐚𝐦𝐢𝐜 𝐀𝐜𝐚𝐝𝐞𝐦𝐢𝐜 𝐒𝐜𝐡𝐞𝐝𝐮𝐥𝐞 — 
 A fluid, intuitive timetable architecture designed for seamless transition between subjects.
 # 𝐃𝐞𝐞𝐩-𝐖𝐨𝐫𝐤 𝐅𝐨𝐜𝐮𝐬 𝐒𝐮𝐢𝐭𝐞 —
 Integrated high-performance utilities engineered to eliminate digital friction and maximize cognitive output.
