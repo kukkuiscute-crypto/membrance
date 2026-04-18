@@ -8,9 +8,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import PasskeyManager from "@/components/PasskeyManager";
 
-// TODO: Replace with your actual GitHub repo URL once you push the v1.0.0 tag.
-// e.g. "https://github.com/yourname/membrance"
-const GITHUB_REPO = "https://github.com/membrance/membrance";
+const GITHUB_REPO = "https://github.com/kukkuiscute-crypto/membrance";
 
 const Settings = () => {
   const { user, isGuest, profile, refreshProfile } = useAuth();
