@@ -21,7 +21,12 @@ const Auth = () => {
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && user) navigate("/dashboard", { replace: true });
+    if (!authLoading && user) {
+      // If signed in via Google, send to the multi-account hub; otherwise dashboard.
+      const identities = (user as any).identities ?? [];
+      const hasGoogle = identities.some((i: any) => i.provider === "google");
+      navigate(hasGoogle ? "/accounts" : "/dashboard", { replace: true });
+    }
   }, [user, authLoading, navigate]);
 
   const checkUsernameAvailable = async (uname: string): Promise<boolean> => {

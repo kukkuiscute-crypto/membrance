@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut, Sun, Moon, UserPlus, School, Bot, Download, Apple, Smartphone, Monitor } from "lucide-react";
+import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut, Sun, Moon, UserPlus, School, Bot, Download, Apple, Smartphone, Monitor, Globe, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEMES, type ThemeKey } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import PasskeyManager from "@/components/PasskeyManager";
+
+// TODO: Replace with your actual GitHub repo URL once you push the v1.0.0 tag.
+// e.g. "https://github.com/yourname/membrance"
+const GITHUB_REPO = "https://github.com/membrance/membrance";
 
 const Settings = () => {
   const { user, isGuest, profile, refreshProfile } = useAuth();
@@ -203,7 +208,26 @@ const Settings = () => {
           <Download className="w-4 h-4 text-primary" />
           <h3 className="font-display font-semibold text-foreground">Download MEMBRANCE App</h3>
         </div>
-        <p className="text-xs text-muted-foreground mb-4">Install MEMBRANCE on your device for the best experience. All builds are auto-generated from GitHub Releases.</p>
+
+        {/* WORKING right-now download — served from /public */}
+        <a
+          href={(import.meta.env.BASE_URL || "/") + "MEMBRANCE-web-v1.0.0.zip"}
+          download
+          className="flex items-center gap-3 p-4 mb-4 rounded-xl bg-primary/15 border border-primary/40 text-foreground hover:bg-primary/20 transition-all glow-box"
+        >
+          <Globe className="w-5 h-5 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold">MEMBRANCE Web v1.0.0 (.zip)</div>
+            <div className="text-[11px] text-muted-foreground">
+              Standalone build · Open <code>index.html</code> after extracting · Works offline · 383 KB
+            </div>
+          </div>
+          <Download className="w-4 h-4 text-primary" />
+        </a>
+
+        <p className="text-xs text-muted-foreground mb-3">
+          Native installers (Windows / macOS / Linux / Android) are built and published via GitHub Releases when a <code>v*</code> tag is pushed.
+        </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
             { label: "Windows x64", icon: Monitor, file: "MEMBRANCE-win32-x64.zip" },
@@ -215,7 +239,7 @@ const Settings = () => {
             { label: "Android APK", icon: Smartphone, file: "MEMBRANCE-android.apk" },
             { label: "iOS (Coming soon)", icon: Apple, file: null },
           ].map((d) => (
-            <a key={d.label} href={d.file ? `https://github.com/membrance/membrance/releases/latest/download/${d.file}` : "#"}
+            <a key={d.label} href={d.file ? `${GITHUB_REPO}/releases/latest/download/${d.file}` : "#"}
               onClick={(e) => !d.file && e.preventDefault()}
               target="_blank" rel="noopener noreferrer"
               className={`flex items-center gap-2 p-3 rounded-lg text-xs transition-all border ${d.file ? "bg-secondary/40 text-foreground hover:bg-primary/10 hover:border-primary/40 border-border/30" : "bg-secondary/20 text-muted-foreground border-border/20 cursor-not-allowed opacity-60"}`}>
@@ -224,9 +248,23 @@ const Settings = () => {
             </a>
           ))}
         </div>
-        <a href="https://github.com/membrance/membrance/releases" target="_blank" rel="noopener noreferrer"
+        <a href={`${GITHUB_REPO}/releases`} target="_blank" rel="noopener noreferrer"
           className="text-xs text-primary hover:underline mt-3 inline-block">All releases →</a>
       </motion.div>
+
+      {/* Passkeys */}
+      {user && !isGuest && <PasskeyManager />}
+
+      {/* Account Hub link */}
+      {user && !isGuest && (
+        <button
+          onClick={() => navigate("/accounts")}
+          className="flex items-center gap-2 w-full justify-center border border-primary/30 text-primary hover:bg-primary/10 py-3 rounded-xl transition-all text-sm font-medium"
+        >
+          <Users className="w-4 h-4" />
+          Manage linked accounts
+        </button>
+      )}
 
       {/* Account Management */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }} className="space-y-3">

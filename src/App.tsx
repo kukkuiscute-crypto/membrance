@@ -10,6 +10,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import AccountHub from "./pages/AccountHub";
 import NotFound from "./pages/NotFound";
 import HelperBot from "./components/HelperBot";
 
@@ -33,6 +34,7 @@ const AppContent = () => {
           <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/accounts" element={<AccountHub />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
