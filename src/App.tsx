@@ -16,13 +16,19 @@ import HelperBot from "./components/HelperBot";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const [introComplete, setIntroComplete] = useState(false);
-  const handleIntroComplete = useCallback(() => setIntroComplete(true), []);
+  // Only show the cinematic intro once per browser session
+  const [introComplete, setIntroComplete] = useState(() => {
+    try { return sessionStorage.getItem("membrance_intro_seen") === "1"; } catch { return false; }
+  });
+  const handleIntroComplete = useCallback(() => {
+    try { sessionStorage.setItem("membrance_intro_seen", "1"); } catch {}
+    setIntroComplete(true);
+  }, []);
 
   return (
     <>
       {!introComplete && <IntroSequence onComplete={handleIntroComplete} />}
-      <div className={introComplete ? "opacity-100" : "opacity-0"}>
+      <div style={{ minHeight: "100vh", background: "hsl(var(--background))" }}>
         <Routes>
           <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<Auth />} />

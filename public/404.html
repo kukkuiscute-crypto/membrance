@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>membrance</title>
+    <script>
+      // GitHub Pages SPA redirect: rewrite the 404 path so React Router can handle it.
+      // Strategy: store the requested path+query in sessionStorage, then redirect to base.
+      (function () {
+        var base = "/membrance/";
+        var loc = window.location;
+        var path = loc.pathname;
+        // Only act when on github pages or matching the base path
+        try {
+          sessionStorage.setItem(
+            "membrance_redirect",
+            path.replace(base, "/") + loc.search + loc.hash
+          );
+        } catch (e) {}
+        loc.replace(loc.origin + base);
+      })();
+    </script>
+  </head>
+  <body style="background:#050505;color:#f2f2f2;font-family:sans-serif;padding:2rem">
+    Loading…
+  </body>
+</html>
