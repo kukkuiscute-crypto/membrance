@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, MessageCircle, Calculator, FileText, Anchor } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HelperBotProps {
   currentPage?: string;
@@ -39,12 +40,23 @@ const LOOKING_AWAY_MESSAGES = [
 ];
 
 const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: HelperBotProps) => {
+  const { user, isGuest } = useAuth();
+  const loggedIn = !!user || isGuest;
   const [enabled, setEnabled] = useState(() => localStorage.getItem("membrance_helper_bot") !== "false");
   const [showMenu, setShowMenu] = useState(false);
   const [showTip, setShowTip] = useState(false);
   const [message, setMessage] = useState("");
   const [lookingAway, setLookingAway] = useState(false);
   const [isStaying, setIsStaying] = useState(false);
+  const [popped, setPopped] = useState(false);
+
+  // Pop-in when logged in — fires shortly after auth becomes true
+  useEffect(() => {
+    if (!loggedIn || !enabled) { setPopped(false); return; }
+    setPopped(false);
+    const t = setTimeout(() => setPopped(true), 350);
+    return () => clearTimeout(t);
+  }, [loggedIn, enabled]);
 
   // All positional state is ref-based — zero re-renders per frame
   const posRef = useRef({ x: window.innerWidth * 0.75, y: window.innerHeight * 0.6 });
@@ -209,6 +221,9 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
     }
   };
 
+  // Hide entirely when not logged in — the bot "pops out of nowhere" once you sign in
+  if (!loggedIn) return null;
+
   if (!enabled) {
     return (
       <button onClick={toggleBot} title="Enable helper bot"
@@ -234,6 +249,15 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
       onPointerUp={onPointerUp}
       onClick={handleClick}
     >
+      <div
+        style={{
+          transform: popped ? "scale(1) rotate(0deg)" : "scale(0) rotate(-30deg)",
+          opacity: popped ? 1 : 0,
+          transition: "transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 400ms ease-out",
+          transformOrigin: "35px 90px",
+          willChange: "transform, opacity",
+        }}
+      >
       {/* Tip bubble */}
       <AnimatePresence>
         {showTip && !showMenu && (
@@ -412,6 +436,7 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
           </circle>
         )}
       </svg>
+      </div>
     </div>
   );
 };
