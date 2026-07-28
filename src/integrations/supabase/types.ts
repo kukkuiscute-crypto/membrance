@@ -527,7 +527,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          display_name: string | null
+          is_verified: boolean | null
+          monthly_points: number | null
+          points: number | null
+          rank: string | null
+          rank_level: number | null
+          theme: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          display_name?: string | null
+          is_verified?: boolean | null
+          monthly_points?: number | null
+          points?: number | null
+          rank?: string | null
+          rank_level?: number | null
+          theme?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          display_name?: string | null
+          is_verified?: boolean | null
+          monthly_points?: number | null
+          points?: number | null
+          rank?: string | null
+          rank_level?: number | null
+          theme?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       increment_points: { Args: { amount: number }; Returns: undefined }

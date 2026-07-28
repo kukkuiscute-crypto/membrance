@@ -2,16 +2,6 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 
 export type ThemeKey =
   | "midnight-dark"
-  | "midnight-gold"
-  | "midnight-teal"
-  | "midnight-blue"
-  | "midnight-green"
-  | "midnight-nature"
-  | "midnight-sun"
-  | "midnight-sunrise"
-  | "midnight-glass"
-  | "midnight-grey"
-  | "midnight-white"
   | "sakura-pink"
   | "famous-indigo"
   | "neon-mode"
@@ -32,20 +22,36 @@ export type ThemeKey =
   | "neon-pink"
   | "honey-amber"
   | "icy-mint"
-  | "royal-plum";
+  | "royal-plum"
+  // New themes
+  | "aurora-borealis"
+  | "sunset-coral"
+  | "midnight-cyan"
+  | "peachy-cream"
+  | "vaporwave"
+  | "matrix-green"
+  | "blood-moon"
+  | "sapphire-tide"
+  | "molten-copper"
+  | "cotton-candy"
+  | "electric-lime"
+  | "cherry-blossom"
+  | "obsidian-flame"
+  | "arctic-aurora"
+  | "royal-gold"
+  | "midnight-lilac"
+  | "cosmic-teal"
+  | "phantom-magenta"
+  | "jade-imperial"
+  | "sunrise-mango"
+  | "twilight-orchid"
+  | "steel-azure"
+  | "toxic-slime"
+  | "rose-quartz"
+  | "abyss-violet";
 
 export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "midnight-dark", label: "Midnight Dark", hue: "262 83% 65%" },
-  { key: "midnight-gold", label: "Midnight Gold", hue: "45 93% 47%" },
-  { key: "midnight-teal", label: "Midnight Teal", hue: "174 72% 45%" },
-  { key: "midnight-blue", label: "Midnight Blue", hue: "217 91% 60%" },
-  { key: "midnight-green", label: "Midnight Green", hue: "142 71% 45%" },
-  { key: "midnight-nature", label: "Midnight Nature", hue: "84 60% 40%" },
-  { key: "midnight-sun", label: "Midnight Sun", hue: "32 95% 55%" },
-  { key: "midnight-sunrise", label: "Midnight Sunrise", hue: "350 80% 60%" },
-  { key: "midnight-glass", label: "Midnight Glass", hue: "200 15% 55%" },
-  { key: "midnight-grey", label: "Midnight Grey", hue: "0 0% 50%" },
-  { key: "midnight-white", label: "Midnight White", hue: "0 0% 80%" },
   { key: "sakura-pink", label: "Sakura Pink", hue: "330 70% 65%" },
   { key: "famous-indigo", label: "Famous Indigo", hue: "240 70% 55%" },
   { key: "neon-mode", label: "Neon Mode", hue: "120 100% 50%" },
@@ -67,6 +73,31 @@ export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "honey-amber", label: "Honey Amber", hue: "38 90% 50%" },
   { key: "icy-mint", label: "Icy Mint", hue: "170 80% 60%" },
   { key: "royal-plum", label: "Royal Plum", hue: "295 65% 45%" },
+  { key: "aurora-borealis", label: "Aurora Borealis", hue: "155 85% 50%" },
+  { key: "sunset-coral", label: "Sunset Coral", hue: "12 88% 62%" },
+  { key: "midnight-cyan", label: "Midnight Cyan", hue: "185 90% 50%" },
+  { key: "peachy-cream", label: "Peachy Cream", hue: "28 85% 68%" },
+  { key: "vaporwave", label: "Vaporwave", hue: "290 95% 65%" },
+  { key: "matrix-green", label: "Matrix Green", hue: "125 95% 45%" },
+  { key: "blood-moon", label: "Blood Moon", hue: "358 78% 42%" },
+  { key: "sapphire-tide", label: "Sapphire Tide", hue: "210 95% 55%" },
+  { key: "molten-copper", label: "Molten Copper", hue: "18 82% 48%" },
+  { key: "cotton-candy", label: "Cotton Candy", hue: "310 80% 72%" },
+  { key: "electric-lime", label: "Electric Lime", hue: "75 100% 55%" },
+  { key: "cherry-blossom", label: "Cherry Blossom", hue: "345 85% 70%" },
+  { key: "obsidian-flame", label: "Obsidian Flame", hue: "8 92% 50%" },
+  { key: "arctic-aurora", label: "Arctic Aurora", hue: "180 75% 55%" },
+  { key: "royal-gold", label: "Royal Gold", hue: "42 95% 55%" },
+  { key: "midnight-lilac", label: "Midnight Lilac", hue: "275 65% 68%" },
+  { key: "cosmic-teal", label: "Cosmic Teal", hue: "170 85% 40%" },
+  { key: "phantom-magenta", label: "Phantom Magenta", hue: "305 90% 55%" },
+  { key: "jade-imperial", label: "Jade Imperial", hue: "150 65% 40%" },
+  { key: "sunrise-mango", label: "Sunrise Mango", hue: "35 100% 58%" },
+  { key: "twilight-orchid", label: "Twilight Orchid", hue: "285 70% 60%" },
+  { key: "steel-azure", label: "Steel Azure", hue: "215 55% 55%" },
+  { key: "toxic-slime", label: "Toxic Slime", hue: "90 100% 50%" },
+  { key: "rose-quartz", label: "Rose Quartz", hue: "355 75% 72%" },
+  { key: "abyss-violet", label: "Abyss Violet", hue: "255 85% 50%" },
 ];
 
 export type AppearanceMode = "dark" | "light";
@@ -156,7 +187,9 @@ function applyTheme(key: ThemeKey, mode: AppearanceMode) {
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<ThemeKey>(() => {
     const saved = localStorage.getItem("membrance_theme");
-    return (saved as ThemeKey) || "midnight-dark";
+    // Migrate away from removed old midnight-* themes
+    if (saved && THEMES.some((t) => t.key === saved)) return saved as ThemeKey;
+    return "midnight-dark";
   });
 
   const [appearance, setAppearanceState] = useState<AppearanceMode>(() => {
