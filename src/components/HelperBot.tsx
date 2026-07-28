@@ -304,58 +304,46 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
 
       {/* Bot SVG */}
       <svg width="70" height="95" viewBox="0 0 70 95" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Thruster flames — revamped multi-layer */}
-        <g>
-          {/* Main exhaust left */}
-          <ellipse cx="26" cy="86" rx="6" ry="4" fill="hsl(var(--primary))" opacity="0.7">
-            <animate attributeName="ry" values="3;7;3" dur="0.12s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="0.12s" repeatCount="indefinite" />
-          </ellipse>
-          {/* Inner hot core left */}
-          <ellipse cx="26" cy="87" rx="3" ry="2" fill="white" opacity="0.6">
-            <animate attributeName="ry" values="1;4;1" dur="0.1s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.3;0.8;0.3" dur="0.1s" repeatCount="indefinite" />
-          </ellipse>
-          {/* Main exhaust right */}
-          <ellipse cx="44" cy="86" rx="6" ry="4" fill="hsl(var(--primary))" opacity="0.7">
-            <animate attributeName="ry" values="4;8;4" dur="0.1s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.5;1;0.5" dur="0.1s" repeatCount="indefinite" />
-          </ellipse>
-          {/* Inner hot core right */}
-          <ellipse cx="44" cy="87" rx="3" ry="2" fill="white" opacity="0.6">
-            <animate attributeName="ry" values="1;5;1" dur="0.08s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.3;0.8;0.3" dur="0.08s" repeatCount="indefinite" />
-          </ellipse>
-          {/* Center orange flame */}
-          <ellipse cx="35" cy="88" rx="4" ry="5" fill="orange" opacity="0.5">
-            <animate attributeName="ry" values="3;8;3" dur="0.09s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.2;0.7;0.2" dur="0.09s" repeatCount="indefinite" />
-          </ellipse>
-          {/* Outer glow */}
-          <ellipse cx="35" cy="90" rx="14" ry="4" fill="hsl(var(--primary))" opacity="0.15">
-            <animate attributeName="ry" values="2;5;2" dur="0.15s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.05;0.2;0.05" dur="0.15s" repeatCount="indefinite" />
-          </ellipse>
-          {/* Sparks */}
-          <circle cx="22" cy="90" r="1" fill="orange" opacity="0.6">
-            <animate attributeName="cy" values="90;95;90" dur="0.3s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.6;0;0.6" dur="0.3s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="48" cy="91" r="0.8" fill="orange" opacity="0.5">
-            <animate attributeName="cy" values="91;97;91" dur="0.25s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.5;0;0.5" dur="0.25s" repeatCount="indefinite" />
-          </circle>
-          <circle cx="35" cy="93" r="1.2" fill="hsl(var(--primary))" opacity="0.4">
-            <animate attributeName="cy" values="93;99;93" dur="0.35s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.4;0;0.4" dur="0.35s" repeatCount="indefinite" />
-          </circle>
-        </g>
+        <defs>
+          <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="hsl(var(--card))" />
+            <stop offset="100%" stopColor="hsl(var(--secondary))" />
+          </linearGradient>
+          <radialGradient id="screenGrad" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stopColor="hsl(var(--primary) / 0.35)" />
+            <stop offset="100%" stopColor="hsl(var(--primary) / 0.08)" />
+          </radialGradient>
+          <radialGradient id="thrusterGrad" cx="50%" cy="0%" r="100%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.9" />
+            <stop offset="35%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+          </radialGradient>
+          <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="1.2" />
+          </filter>
+        </defs>
 
-        {/* Body */}
-        <rect x="18" y="48" width="34" height="30" rx="8" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="1.5" opacity="0.95" />
-        {/* Screen on body */}
-        <rect x="23" y="53" width="24" height="12" rx="3" fill="hsl(var(--primary))" opacity="0.12" stroke="hsl(var(--primary))" strokeWidth="0.5" />
-        <text x="35" y="62" textAnchor="middle" fontSize="6" fill="hsl(var(--primary))" fontFamily="monospace" fontWeight="bold">BOT</text>
+        {/* Thruster — sleek single plume */}
+        <g filter="url(#soft)">
+          <ellipse cx="35" cy="88" rx="12" ry="5" fill="url(#thrusterGrad)" opacity="0.85">
+            <animate attributeName="ry" values="4;7;4" dur="0.35s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.6;1;0.6" dur="0.35s" repeatCount="indefinite" />
+          </ellipse>
+          <ellipse cx="35" cy="86" rx="5" ry="2.5" fill="white" opacity="0.7">
+            <animate attributeName="ry" values="1.5;3;1.5" dur="0.3s" repeatCount="indefinite" />
+          </ellipse>
+        </g>
+        {/* Spark */}
+        <circle cx="35" cy="94" r="0.9" fill="hsl(var(--primary))" opacity="0.5">
+          <animate attributeName="cy" values="93;100;93" dur="0.9s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.6;0;0.6" dur="0.9s" repeatCount="indefinite" />
+        </circle>
+
+        {/* Body — capsule with gradient */}
+        <rect x="17" y="49" width="36" height="30" rx="14" fill="url(#bodyGrad)" stroke="hsl(var(--primary) / 0.55)" strokeWidth="1" />
+        {/* Screen */}
+        <rect x="22" y="55" width="26" height="13" rx="4" fill="url(#screenGrad)" stroke="hsl(var(--primary) / 0.4)" strokeWidth="0.6" />
+        <text x="35" y="64" textAnchor="middle" fontSize="6" fill="hsl(var(--primary))" fontFamily="monospace" fontWeight="bold" letterSpacing="1">BOT</text>
 
         {/* Arms */}
         <g>
@@ -375,16 +363,18 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
           </circle>
         </g>
 
-        {/* Head */}
-        <rect x="8" y="2" width="54" height="48" rx="18" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="1.5">
+        {/* Head — softer, sleeker */}
+        <rect x="7" y="2" width="56" height="48" rx="22" fill="url(#bodyGrad)" stroke="hsl(var(--primary) / 0.55)" strokeWidth="1">
           <animateTransform attributeName="transform" type="rotate" values="-2,35,26;2,35,26;-2,35,26" dur="4s" repeatCount="indefinite" />
         </rect>
+        {/* Visor highlight */}
+        <path d="M14 12 Q18 6 35 6 Q52 6 56 12" stroke="hsl(var(--primary) / 0.25)" strokeWidth="1" fill="none" strokeLinecap="round" />
 
         {/* Antenna */}
         <line x1="35" y1="4" x2="35" y2="-2" stroke="hsl(var(--primary))" strokeWidth="1.5">
           <animateTransform attributeName="transform" type="rotate" values="-2,35,26;2,35,26;-2,35,26" dur="4s" repeatCount="indefinite" />
         </line>
-        <circle cx="35" cy="-3" r="3.5" fill="hsl(var(--primary))" opacity="0.8">
+        <circle cx="35" cy="-3" r="2.8" fill="hsl(var(--primary))" opacity="0.9">
           <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" />
           <animateTransform attributeName="transform" type="rotate" values="-2,35,26;2,35,26;-2,35,26" dur="4s" repeatCount="indefinite" />
         </circle>
