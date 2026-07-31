@@ -20,16 +20,22 @@ const TIPS: Record<string, string[]> = {
     "This is your dashboard! Explore subjects, videos, and more.",
     "Check the sidebar to navigate to different sections.",
     "Complete daily missions to earn points and level up!",
+    "Psst — the site is in alpha, so expect new things often.",
+    "Try the Study Tracker to keep your routine on rails.",
+    "Themes live in Settings — there are a lot of them now!",
   ],
   videohub: [
     "Browse study videos by subject or search for topics.",
     "Save videos to watch later with the bookmark icon.",
     "Share your favorite educational videos with the community!",
+    "Scroll forever — new videos keep loading as you go.",
   ],
   default: [
     "Need help? Click me anytime for tips!",
     "Keep studying consistently for the best results.",
     "Earn points by completing daily missions and watching videos.",
+    "Drag me anywhere — then hit 'Stay Here' to pin me down.",
+    "Flashcards get you points every flip until you master them.",
   ],
 };
 
