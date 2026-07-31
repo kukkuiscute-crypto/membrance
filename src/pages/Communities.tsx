@@ -179,8 +179,11 @@ const Communities = () => {
   const sendMessage = async () => {
     if (!msgText.trim() || !user || !selectedCommunity) return;
     if (msgText.length > 2000) { toast.error("Message too long (max 2000 characters)"); return; }
+    const { clean, changed } = filterChat(msgText);
+    if (!clean.trim()) { toast.error("Message blocked by the chat filter"); return; }
+    if (changed) toast.info("We cleaned up some language in your message");
     const { error } = await supabase.from("community_messages").insert({
-      community_id: selectedCommunity.id, user_id: user.id, content: msgText, username: profile?.username || profile?.display_name || "User",
+      community_id: selectedCommunity.id, user_id: user.id, content: clean, username: profile?.username || profile?.display_name || "User",
     });
     if (error) { toast.error(error.message); return; }
     setMsgText("");
