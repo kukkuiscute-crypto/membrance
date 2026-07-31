@@ -327,7 +327,17 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
           <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
             <feGaussianBlur stdDeviation="1.2" />
           </filter>
+          <radialGradient id="auraGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="hsl(var(--glow))" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="hsl(var(--glow))" stopOpacity="0" />
+          </radialGradient>
         </defs>
+
+        {/* Ambient aura */}
+        <ellipse cx="35" cy="40" rx="40" ry="46" fill="url(#auraGrad)">
+          <animate attributeName="rx" values="36;42;36" dur="4s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.7;1;0.7" dur="4s" repeatCount="indefinite" />
+        </ellipse>
 
         {/* Thruster — sleek single plume */}
         <g filter="url(#soft)">
