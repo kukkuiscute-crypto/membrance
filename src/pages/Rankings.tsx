@@ -2,7 +2,8 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import RankBadge from "@/components/RankBadge";
 import { RANKS } from "@/lib/ranks";
-import { Shield, Lock } from "lucide-react";
+import RankIcon from "@/components/RankIcon";
+import { Lock } from "lucide-react";
 
 const Rankings = () => {
   const { user, isGuest, profile } = useAuth();
@@ -35,7 +36,7 @@ const Rankings = () => {
         <div className="grid gap-2">
           {RANKS.map((rank, i) => {
             const current = profile?.points >= rank.minPoints;
-            const isFutureSelf = rank.name === "Future Self";
+            const isElite = rank.name === "Super League";
             return (
               <motion.div
                 key={rank.name}
@@ -54,14 +55,14 @@ const Rankings = () => {
                     border: `1px solid hsl(${rank.color} / ${current ? 0.5 : 0.15})`,
                   }}
                 >
-                  <Shield className="w-4 h-4" style={{ color: `hsl(${rank.color})` }} />
+                  <RankIcon rank={rank.name} color={rank.color} size={18} />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium" style={{ color: current ? `hsl(${rank.color})` : undefined }}>
                     {rank.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {isFutureSelf ? "3 Elite Levels" : "7 Levels"} · {rank.minPoints}+ pts
+                    {isElite ? "3 Elite Levels" : "7 Levels"} · {rank.minPoints}+ pts
                   </p>
                 </div>
                 {current && (
