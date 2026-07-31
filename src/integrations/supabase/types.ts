@@ -566,6 +566,7 @@ export type Database = {
     }
     Functions: {
       increment_points: { Args: { amount: number }; Returns: undefined }
+      is_community_member: { Args: { _community_id: string }; Returns: boolean }
       reset_monthly_points: { Args: never; Returns: undefined }
     }
     Enums: {
