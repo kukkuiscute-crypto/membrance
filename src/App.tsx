@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import AccountHub from "./pages/AccountHub";
 import NotFound from "./pages/NotFound";
 import HelperBot from "./components/HelperBot";
+import AlphaBadge from "./components/AlphaBadge";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const AppContent = () => {
     <>
       {!introComplete && <IntroSequence onComplete={handleIntroComplete} />}
       <div style={{ minHeight: "100vh", background: "hsl(var(--background))" }}>
+        <div className="aurora-layer" aria-hidden="true" />
         <Routes>
           <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<Auth />} />
@@ -46,6 +48,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
         <HelperBot currentPage={window.location.pathname.includes("auth") ? "auth" : window.location.pathname.includes("video") ? "videohub" : "dashboard"} />
+        <AlphaBadge />
       </div>
     </>
   );
