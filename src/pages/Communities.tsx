@@ -4,6 +4,7 @@ import { Users, Plus, Search, X, Send, CheckCircle, Hammer, Lock, Globe, Bell, C
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { filterChat } from "@/lib/chatFilter";
 
 const ICONS = ["📚", "🔬", "🧮", "🎨", "🌍", "💻", "🎵", "⚽", "🚀", "🧪"];
 const VERIFIED_USERS = ["kukkuiscute"];
