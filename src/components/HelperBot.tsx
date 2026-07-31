@@ -20,16 +20,22 @@ const TIPS: Record<string, string[]> = {
     "This is your dashboard! Explore subjects, videos, and more.",
     "Check the sidebar to navigate to different sections.",
     "Complete daily missions to earn points and level up!",
+    "Psst — the site is in alpha, so expect new things often.",
+    "Try the Study Tracker to keep your routine on rails.",
+    "Themes live in Settings — there are a lot of them now!",
   ],
   videohub: [
     "Browse study videos by subject or search for topics.",
     "Save videos to watch later with the bookmark icon.",
     "Share your favorite educational videos with the community!",
+    "Scroll forever — new videos keep loading as you go.",
   ],
   default: [
     "Need help? Click me anytime for tips!",
     "Keep studying consistently for the best results.",
     "Earn points by completing daily missions and watching videos.",
+    "Drag me anywhere — then hit 'Stay Here' to pin me down.",
+    "Flashcards get you points every flip until you master them.",
   ],
 };
 
@@ -321,7 +327,17 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
           <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
             <feGaussianBlur stdDeviation="1.2" />
           </filter>
+          <radialGradient id="auraGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="hsl(var(--glow))" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="hsl(var(--glow))" stopOpacity="0" />
+          </radialGradient>
         </defs>
+
+        {/* Ambient aura */}
+        <ellipse cx="35" cy="42" rx="33" ry="45" fill="url(#auraGrad)">
+          <animate attributeName="rx" values="30;34;30" dur="4s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.7;1;0.7" dur="4s" repeatCount="indefinite" />
+        </ellipse>
 
         {/* Thruster — sleek single plume */}
         <g filter="url(#soft)">

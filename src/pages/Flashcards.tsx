@@ -58,6 +58,19 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
   const [groupSubCards, setGroupSubCards] = useState<string[]>(["", "", "", ""]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Cinematic intro — plays once per browser session
+  const [showIntro, setShowIntro] = useState(() => {
+    try { return sessionStorage.getItem("membrance_flashcards_intro") !== "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    if (!showIntro) return;
+    const t = setTimeout(() => {
+      try { sessionStorage.setItem("membrance_flashcards_intro", "1"); } catch { /* ignore */ }
+      setShowIntro(false);
+    }, 1900);
+    return () => clearTimeout(t);
+  }, [showIntro]);
+
   useEffect(() => { localStorage.setItem("membrance_flashcards", JSON.stringify(cards)); }, [cards]);
   useEffect(() => { localStorage.setItem("membrance_groups", JSON.stringify(groups)); }, [groups]);
 
@@ -141,21 +154,71 @@ const FlashcardsPage = ({ onFlip, onMaster }: FlashcardsPageProps) => {
   const groupCards = activeGroupData ? cards.filter((c) => activeGroupData.cardIds.includes(c.id)) : [];
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 max-w-5xl mx-auto relative">
+      {/* Intro animation */}
+      <AnimatePresence>
+        {showIntro && (
+          <motion.div
+            key="fc-intro"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.04, filter: "blur(6px)" }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-xl"
+          >
+            <div className="relative w-[190px] h-[130px] mb-8" style={{ perspective: 900 }}>
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 60, rotateX: -60, scale: 0.85 }}
+                  animate={{ opacity: 1, y: i * -10, rotateX: 0, scale: 1 - i * 0.05, rotate: (i - 1) * 6 }}
+                  transition={{ delay: i * 0.13, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute inset-0 rounded-2xl border border-primary/40 bg-card/80 glow-box"
+                  style={{ zIndex: 3 - i }}
+                />
+              ))}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <Layers className="w-9 h-9 text-primary" />
+              </motion.div>
+            </div>
+            <motion.h2
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.75, duration: 0.5 }}
+              className="font-display text-3xl font-bold text-gradient tracking-tight"
+            >
+              Flashcards
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.95, duration: 0.5 }}
+              className="text-xs uppercase tracking-[0.35em] text-muted-foreground mt-2"
+            >
+              Flip · Learn · Master
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center justify-between mb-6 animate-card-rise">
         <div>
-          <h2 className="font-display text-2xl font-bold text-foreground">Flashcards</h2>
+          <h2 className="font-display text-3xl font-bold text-gradient tracking-tight">Flashcards</h2>
           <p className="text-sm text-muted-foreground">{cards.length} cards · {cards.filter((c) => c.mastered).length} mastered · {pinnedCards.length} pinned</p>
         </div>
         <div className="flex gap-2">
           <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleUpload} />
-          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/60 text-muted-foreground hover:text-foreground border border-border/30 text-xs transition-all">
+          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/60 text-muted-foreground hover:text-foreground border border-border/30 text-xs hover-lift">
             <Upload className="w-3.5 h-3.5" /> Upload
           </button>
-          <button onClick={() => setShowGroupForm(!showGroupForm)} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/60 text-muted-foreground hover:text-foreground border border-border/30 text-xs transition-all">
+          <button onClick={() => setShowGroupForm(!showGroupForm)} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/60 text-muted-foreground hover:text-foreground border border-border/30 text-xs hover-lift">
             <Layers className="w-3.5 h-3.5" /> Group-per
           </button>
-          <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium glow-box-strong">
+          <button onClick={() => setShowForm(!showForm)} className="shine flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium glow-box-strong hover-lift">
             <Plus className="w-4 h-4" /> New Card
           </button>
         </div>

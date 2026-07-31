@@ -112,3 +112,94 @@
     animation: neon-pulse-border 2s ease-in-out infinite;
   }
 }
+
+/* ============ GLOW-UP LAYER ============ */
+@layer utilities {
+  .text-gradient {
+    background-image: linear-gradient(100deg, hsl(var(--foreground)), hsl(var(--primary)) 55%, hsl(var(--glow-muted)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .surface-card {
+    @apply relative rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl;
+    box-shadow: 0 1px 0 0 hsl(var(--foreground) / 0.05) inset, 0 18px 40px -24px hsl(var(--glow) / 0.45);
+  }
+
+  .hover-lift {
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms ease, border-color 260ms ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+    border-color: hsl(var(--primary) / 0.45);
+    box-shadow: 0 24px 50px -22px hsl(var(--glow) / 0.6);
+  }
+
+  .shine {
+    position: relative;
+    overflow: hidden;
+  }
+  .shine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 35%, hsl(0 0% 100% / 0.14) 50%, transparent 65%);
+    transform: translateX(-120%);
+    transition: transform 800ms ease;
+  }
+  .shine:hover::after { transform: translateX(120%); }
+
+  @keyframes aurora-drift {
+    0%   { transform: translate3d(-6%, -4%, 0) scale(1); }
+    50%  { transform: translate3d(6%, 4%, 0) scale(1.15); }
+    100% { transform: translate3d(-6%, -4%, 0) scale(1); }
+  }
+  .aurora-layer {
+    position: fixed;
+    inset: -20%;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(38% 42% at 20% 25%, hsl(var(--glow) / 0.16), transparent 70%),
+      radial-gradient(34% 38% at 80% 20%, hsl(var(--glow-muted) / 0.14), transparent 70%),
+      radial-gradient(46% 46% at 55% 90%, hsl(var(--primary) / 0.12), transparent 70%);
+    filter: blur(30px);
+    animation: aurora-drift 24s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  @keyframes sheen {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  .alpha-chip {
+    background-image: linear-gradient(90deg,
+      hsl(var(--primary) / 0.25),
+      hsl(var(--glow) / 0.55),
+      hsl(var(--primary) / 0.25));
+    background-size: 200% 100%;
+    animation: sheen 3.5s linear infinite;
+  }
+
+  @keyframes card-rise {
+    0%   { opacity: 0; transform: translateY(28px) rotateX(-14deg) scale(0.94); }
+    100% { opacity: 1; transform: translateY(0) rotateX(0) scale(1); }
+  }
+  .animate-card-rise {
+    animation: card-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+/* Sleeker scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.35) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.55); }
