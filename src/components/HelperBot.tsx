@@ -334,8 +334,8 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
         </defs>
 
         {/* Ambient aura */}
-        <ellipse cx="35" cy="40" rx="40" ry="46" fill="url(#auraGrad)">
-          <animate attributeName="rx" values="36;42;36" dur="4s" repeatCount="indefinite" />
+        <ellipse cx="35" cy="42" rx="33" ry="45" fill="url(#auraGrad)">
+          <animate attributeName="rx" values="30;34;30" dur="4s" repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.7;1;0.7" dur="4s" repeatCount="indefinite" />
         </ellipse>
 
