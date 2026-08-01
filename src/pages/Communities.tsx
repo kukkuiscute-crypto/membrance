@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { filterChat } from "@/lib/chatFilter";
+import { canCreateCommunity } from "@/lib/ranks";
 
 const ICONS = ["📚", "🔬", "🧮", "🎨", "🌍", "💻", "🎵", "⚽", "🚀", "🧪"];
 const VERIFIED_USERS = ["kukkuiscute"];
@@ -31,6 +32,8 @@ const Communities = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const isDev = DEV_USERS.includes(profile?.username?.toLowerCase() || "");
+  const isVerified = VERIFIED_USERS.includes(profile?.username?.toLowerCase() || "");
+  const canMakeCommunity = canCreateCommunity(profile?.points || 0, { isDev, isVerified });
   const isUserVerified = (uname: string) => VERIFIED_USERS.includes(uname?.toLowerCase());
   const isUserDev = (uname: string) => DEV_USERS.includes(uname?.toLowerCase());
 
@@ -88,6 +91,7 @@ const Communities = () => {
   const createCommunity = async () => {
     if (!newName) { toast.error("Name required"); return; }
     if (!user) { toast.error("Sign in to create"); return; }
+    if (!canMakeCommunity) { toast.error("Only Super League members, admins and devs can create communities"); return; }
     const { data, error } = await supabase.from("communities").insert({ name: newName, description: newDesc, created_by: user.id, icon: newIcon, join_mode: newJoinMode }).select().single();
     if (error) { toast.error(error.message); return; }
     await supabase.from("community_members").insert({ community_id: data.id, user_id: user.id, role: "admin" });
@@ -201,9 +205,14 @@ const Communities = () => {
           <h2 className="font-display text-2xl font-bold text-foreground">Communities</h2>
           <p className="text-sm text-muted-foreground">{communities.length} communities</p>
         </div>
-        <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
-          <Plus className="w-4 h-4" /> Create
+        <button
+          onClick={() => canMakeCommunity ? setShowCreate(true) : toast.error("Reach Super League rank to create communities")}
+          disabled={!canMakeCommunity}
+          title={canMakeCommunity ? "Create a community" : "Super League members, admins and devs only"}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            canMakeCommunity ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground cursor-not-allowed"
+          }`}>
+          {canMakeCommunity ? <Plus className="w-4 h-4" /> : <Lock className="w-4 h-4" />} Create
         </button>
       </div>
 

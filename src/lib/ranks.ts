@@ -44,3 +44,22 @@ export function getRankInfo(points: number) {
     totalPoints: points,
   };
 }
+
+/** Human-readable progression rules shown on the Rankings page. */
+export const RANK_RULES = [
+  { title: "Earn points, climb ranks", detail: "Every rank needs more points than the last. Points come from missions, flashcards, videos and tracker streaks." },
+  { title: "7 levels per rank", detail: "Each rank is split into 7 levels. Fill a level bar to advance one level — fill all 7 to promote to the next rank." },
+  { title: "Super League is elite", detail: "The final rank has only 3 elite levels and is reserved for the top students." },
+  { title: "Ranks never drop", detail: "All-time points only go up, so a rank you unlock is yours to keep. Monthly points reset every month for the monthly board." },
+  { title: "Perks unlock with rank", detail: "Super League members (plus verified admins and devs) can create communities." },
+];
+
+export const rankIndex = (points: number) => {
+  let idx = 0;
+  for (let i = RANKS.length - 1; i >= 0; i--) if (points >= RANKS[i].minPoints) { idx = i; break; }
+  return idx;
+};
+
+/** Only Super League members, verified admins and devs can create communities. */
+export const canCreateCommunity = (points: number, opts: { isDev?: boolean; isVerified?: boolean } = {}) =>
+  !!opts.isDev || !!opts.isVerified || getRankInfo(points).rank === "Super League";
