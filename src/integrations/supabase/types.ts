@@ -89,6 +89,27 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_moderation: {
+        Row: {
+          banned_until: string | null
+          updated_at: string
+          user_id: string
+          warnings: number
+        }
+        Insert: {
+          banned_until?: string | null
+          updated_at?: string
+          user_id: string
+          warnings?: number
+        }
+        Update: {
+          banned_until?: string | null
+          updated_at?: string
+          user_id?: string
+          warnings?: number
+        }
+        Relationships: []
+      }
       communities: {
         Row: {
           created_at: string
@@ -96,6 +117,7 @@ export type Database = {
           description: string | null
           icon: string | null
           id: string
+          image_url: string | null
           join_mode: string
           member_count: number
           name: string
@@ -106,6 +128,7 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          image_url?: string | null
           join_mode?: string
           member_count?: number
           name: string
@@ -116,6 +139,7 @@ export type Database = {
           description?: string | null
           icon?: string | null
           id?: string
+          image_url?: string | null
           join_mode?: string
           member_count?: number
           name?: string
@@ -358,6 +382,7 @@ export type Database = {
       profiles: {
         Row: {
           age: number | null
+          avatar_url: string | null
           created_at: string
           display_name: string | null
           education_system: string | null
@@ -381,6 +406,7 @@ export type Database = {
         }
         Insert: {
           age?: number | null
+          avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           education_system?: string | null
@@ -404,6 +430,7 @@ export type Database = {
         }
         Update: {
           age?: number | null
+          avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           education_system?: string | null
