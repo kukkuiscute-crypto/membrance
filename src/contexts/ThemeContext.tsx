@@ -48,7 +48,24 @@ export type ThemeKey =
   | "steel-azure"
   | "toxic-slime"
   | "rose-quartz"
-  | "abyss-violet";
+  | "abyss-violet"
+  // Alpha 2.0 themes
+  | "chalkboard-green"
+  | "nebula-rose"
+  | "arcade-cyan"
+  | "sunflower-field"
+  | "deep-ocean-teal"
+  | "midnight-ember"
+  | "glacier-blue"
+  | "plasma-purple"
+  | "candy-apple"
+  | "moss-stone"
+  | "solar-eclipse"
+  | "bubblegum-blue"
+  | "amber-dusk"
+  | "ultraviolet"
+  | "spring-leaf"
+  | "crimson-gold";
 
 export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "midnight-dark", label: "Midnight Dark", hue: "262 83% 65%" },
@@ -98,6 +115,22 @@ export const THEMES: { key: ThemeKey; label: string; hue: string }[] = [
   { key: "toxic-slime", label: "Toxic Slime", hue: "90 100% 50%" },
   { key: "rose-quartz", label: "Rose Quartz", hue: "355 75% 72%" },
   { key: "abyss-violet", label: "Abyss Violet", hue: "255 85% 50%" },
+  { key: "chalkboard-green", label: "Chalkboard Green", hue: "152 55% 42%" },
+  { key: "nebula-rose", label: "Nebula Rose", hue: "335 88% 62%" },
+  { key: "arcade-cyan", label: "Arcade Cyan", hue: "188 100% 52%" },
+  { key: "sunflower-field", label: "Sunflower Field", hue: "48 98% 55%" },
+  { key: "deep-ocean-teal", label: "Deep Ocean Teal", hue: "192 70% 38%" },
+  { key: "midnight-ember", label: "Midnight Ember", hue: "15 88% 55%" },
+  { key: "glacier-blue", label: "Glacier Blue", hue: "205 80% 66%" },
+  { key: "plasma-purple", label: "Plasma Purple", hue: "268 95% 62%" },
+  { key: "candy-apple", label: "Candy Apple", hue: "352 92% 56%" },
+  { key: "moss-stone", label: "Moss Stone", hue: "108 40% 45%" },
+  { key: "solar-eclipse", label: "Solar Eclipse", hue: "30 95% 60%" },
+  { key: "bubblegum-blue", label: "Bubblegum Blue", hue: "222 92% 68%" },
+  { key: "amber-dusk", label: "Amber Dusk", hue: "36 92% 52%" },
+  { key: "ultraviolet", label: "Ultraviolet", hue: "248 96% 66%" },
+  { key: "spring-leaf", label: "Spring Leaf", hue: "138 70% 48%" },
+  { key: "crimson-gold", label: "Crimson Gold", hue: "8 85% 58%" },
 ];
 
 export type AppearanceMode = "dark" | "light";

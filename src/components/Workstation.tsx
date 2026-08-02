@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, BookOpen, Clock, Layers, Trophy, PlayCircle, StickyNote, Target, CheckCircle, X, Zap } from "lucide-react";
+import { Sparkles, BookOpen, Layers, Trophy, PlayCircle, StickyNote, Target, X, Zap, Flame, PenSquare, Timer, Award, TrendingUp, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,6 +63,34 @@ interface WorkstationProps {
   onFinishLesson: () => void;
 }
 
+type Difficulty = "chill" | "focused" | "blitz";
+
+const DIFFICULTY: Record<Difficulty, { label: string; questions: number; seconds: number; multiplier: number; hint: string }> = {
+  chill: { label: "Chill", questions: 5, seconds: 0, multiplier: 1, hint: "No timer · 5 questions" },
+  focused: { label: "Focused", questions: 7, seconds: 20, multiplier: 1.5, hint: "20s per question · 7 questions" },
+  blitz: { label: "Blitz", questions: 10, seconds: 10, multiplier: 2, hint: "10s per question · 10 questions" },
+};
+
+const STREAK_KEY = "membrance_mission_streak";
+
+function readStreak() {
+  try {
+    const raw = localStorage.getItem(STREAK_KEY);
+    if (!raw) return { count: 0, last: "" };
+    return JSON.parse(raw) as { count: number; last: string };
+  } catch { return { count: 0, last: "" }; }
+}
+
+function bumpStreak() {
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  const cur = readStreak();
+  if (cur.last === today) return cur;
+  const next = { count: cur.last === yesterday ? cur.count + 1 : 1, last: today };
+  try { localStorage.setItem(STREAK_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  return next;
+}
+
 const Workstation = ({ onFinishLesson }: WorkstationProps) => {
   const navigate = useNavigate();
   const { profile, isGuest, user } = useAuth();
@@ -80,9 +108,28 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState<number | null>(null);
   const [quizDone, setQuizDone] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>(() => (localStorage.getItem("membrance_quiz_difficulty") as Difficulty) || "focused");
+  const [streak, setStreak] = useState(() => readStreak());
+  const [timeLeft, setTimeLeft] = useState(0);
 
   const watchHistory = JSON.parse(localStorage.getItem("membrance_watch_history") || "[]");
   const videosWatched = watchHistory.length;
+  const cfg = DIFFICULTY[difficulty];
+  const earned = Math.round(score * 5 * cfg.multiplier);
+
+  // Per-question countdown for timed modes.
+  useEffect(() => {
+    if (!quizActive || quizDone || cfg.seconds === 0 || answered !== null) return;
+    setTimeLeft(cfg.seconds);
+    const id = window.setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) { window.clearInterval(id); handleAnswer(-1); return 0; }
+        return t - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizActive, quizDone, currentQ, answered, difficulty]);
 
   const toggleSubject = (s: string) => {
     setSelectedSubjects(prev => {
@@ -99,8 +146,7 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
       const questions = QUIZ_BANK[sub] || [];
       questions.forEach(q => pool.push({ ...q, subject: sub }));
     });
-    // Shuffle and pick 5
-    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 5);
+    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, cfg.questions);
     if (shuffled.length === 0) { toast.error("No questions available"); return; }
     setQuizQuestions(shuffled);
     setCurrentQ(0);
@@ -119,8 +165,8 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
     setTimeout(() => {
       if (currentQ + 1 >= quizQuestions.length) {
         setQuizDone(true);
-        // Award points based on score
-        const pts = (correct ? score + 1 : score) * 5;
+        setStreak(bumpStreak());
+        const pts = Math.round((correct ? score + 1 : score) * 5 * cfg.multiplier);
         if (pts > 0 && user && !isGuest) {
           addQuizPoints(pts);
         }
@@ -128,7 +174,7 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
         setCurrentQ(c => c + 1);
         setAnswered(null);
       }
-    }, 1200);
+    }, 1100);
   };
 
   const addQuizPoints = async (amount: number) => {
@@ -157,7 +203,8 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
                 <Trophy className="w-12 h-12 text-primary mx-auto mb-4" />
                 <h3 className="font-display text-2xl font-bold text-foreground mb-2">Mission Complete!</h3>
                 <p className="text-muted-foreground mb-2">You scored {score}/{quizQuestions.length}</p>
-                <p className="text-primary font-semibold text-lg mb-6">+{score * 5} points earned!</p>
+                <p className="text-primary font-semibold text-lg mb-1">+{earned} points earned!</p>
+                <p className="text-xs text-muted-foreground mb-6">{cfg.label} mode · ×{cfg.multiplier} multiplier · {streak.count} day streak 🔥</p>
                 <div className="flex gap-3 justify-center">
                   <button onClick={startQuiz} className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm">
                     Play Again
@@ -174,8 +221,22 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
                     <Target className="w-5 h-5 text-primary" />
                     <span className="text-xs font-medium uppercase tracking-widest text-primary">Daily Mission</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{currentQ + 1}/{quizQuestions.length}</span>
+                  <div className="flex items-center gap-3">
+                    {cfg.seconds > 0 && (
+                      <span className={`flex items-center gap-1 text-xs font-semibold ${timeLeft <= 5 ? "text-destructive" : "text-primary"}`}>
+                        <Timer className="w-3.5 h-3.5" /> {timeLeft}s
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">{currentQ + 1}/{quizQuestions.length}</span>
+                  </div>
                 </div>
+
+                {cfg.seconds > 0 && (
+                  <div className="h-1 rounded-full bg-secondary/60 mb-5 overflow-hidden">
+                    <div className="h-full bg-primary transition-all duration-1000 ease-linear"
+                      style={{ width: `${(timeLeft / cfg.seconds) * 100}%` }} />
+                  </div>
+                )}
 
                 <p className="text-[10px] text-primary/60 uppercase tracking-wider mb-1">{quizQuestions[currentQ].subject}</p>
                 <h3 className="font-display text-xl font-bold text-foreground mb-6">{quizQuestions[currentQ].q}</h3>
@@ -219,28 +280,44 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
               </div>
 
               <h2 className="font-display text-3xl font-bold text-foreground mb-3">Welcome back, {name}</h2>
-              <p className="text-muted-foreground text-base mb-8 max-w-md">
+              <p className="text-muted-foreground text-base mb-6 max-w-md">
                 {videosWatched > 0
                   ? `You've watched ${videosWatched} videos. Complete daily missions to earn points!`
                   : "Complete daily missions to earn points and climb the ranks."}
               </p>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="glass rounded-xl p-4 neon-border">
-                  <div className="flex items-center gap-2 mb-1">
-                    <BookOpen className="w-4 h-4 text-primary" />
-                    <span className="text-xs text-muted-foreground">Subjects</span>
+              {/* Stat strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                {[
+                  { icon: Flame, label: "Streak", value: `${streak.count}d` },
+                  { icon: Award, label: "All-time", value: `${profile?.points ?? 0}` },
+                  { icon: TrendingUp, label: "This month", value: `${(profile as any)?.monthly_points ?? 0}` },
+                  { icon: PlayCircle, label: "Watched", value: `${videosWatched}` },
+                ].map((s) => (
+                  <div key={s.label} className="surface-card p-3 hover-lift">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <s.icon className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</span>
+                    </div>
+                    <p className="font-display text-lg font-bold text-foreground">{s.value}</p>
                   </div>
-                  <p className="font-display font-semibold text-foreground text-sm">{selectedSubjects.join(", ") || "None selected"}</p>
-                </div>
-                <div className="glass rounded-xl p-4 neon-border">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <span className="text-xs text-muted-foreground">Your Points</span>
-                  </div>
-                  <p className="font-display font-semibold text-foreground">{profile?.points ?? 0} pts</p>
-                </div>
+                ))}
               </div>
+
+              {/* Difficulty */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {(Object.keys(DIFFICULTY) as Difficulty[]).map((d) => (
+                  <button key={d} onClick={() => { setDifficulty(d); localStorage.setItem("membrance_quiz_difficulty", d); }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      difficulty === d ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30 hover:text-foreground"
+                    }`}>
+                    {DIFFICULTY[d].label} ×{DIFFICULTY[d].multiplier}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-5 flex items-center gap-1.5">
+                <BookOpen className="w-3 h-3 text-primary" /> {cfg.hint} · Subjects: {selectedSubjects.join(", ") || "none selected"}
+              </p>
 
               {/* Subject Picker */}
               <div className="mb-6">
@@ -276,14 +353,18 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl w-full mt-6">
         {[
+          { label: "Writing Board", count: "Solve with the bot", icon: PenSquare, path: "/dashboard/board" },
           { label: "Flashcards", count: "Study Cards", icon: Layers, path: "/dashboard/flashcards" },
           { label: "Video Hub", count: `${videosWatched} watched`, icon: PlayCircle, path: "/dashboard/videos" },
-          { label: "Study Notes", count: "Your Desk", icon: StickyNote, path: "/dashboard/desk" },
-          { label: "Olympiad Prep", count: "Coming Soon", icon: Trophy, path: "/dashboard/olympiads" },
+          { label: "Your Desk", count: "Notes & saves", icon: StickyNote, path: "/dashboard/desk" },
+          { label: "Communities", count: "Study together", icon: Users, path: "/dashboard/communities" },
+          { label: "Leaderboard", count: "Climb the ranks", icon: Trophy, path: "/dashboard/leaderboard" },
+          { label: "Calendar", count: "Plan your week", icon: Target, path: "/dashboard/calendar" },
+          { label: "Study Helper", count: "Revise a chapter", icon: Sparkles, path: "/dashboard/helper" },
         ].map((item, i) => (
           <motion.div key={item.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.1, duration: 0.4 }}
             onClick={() => navigate(item.path)}
-            className="glass rounded-xl p-4 cursor-pointer hover:neon-border-active transition-all duration-200 group">
+            className="surface-card p-4 cursor-pointer hover-lift group">
             <item.icon className="w-6 h-6 text-primary mb-2" />
             <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{item.label}</p>
             <p className="text-xs text-muted-foreground">{item.count}</p>

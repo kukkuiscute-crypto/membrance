@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, MessageCircle, Calculator, FileText, Anchor } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { botSpeak } from "@/lib/botVoice";
 
 interface HelperBotProps {
   currentPage?: string;
@@ -55,6 +56,7 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
   const [lookingAway, setLookingAway] = useState(false);
   const [isStaying, setIsStaying] = useState(false);
   const [popped, setPopped] = useState(false);
+  const [waving, setWaving] = useState(false);
 
   // Pop-in when logged in — fires shortly after auth becomes true
   useEffect(() => {
@@ -191,7 +193,12 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
   }, [isPasswordFocused, enabled]);
 
   const handleClick = useCallback(() => {
-    if (!isDraggingRef.current) { setShowMenu(prev => !prev); setShowTip(false); }
+    if (!isDraggingRef.current) {
+      setShowMenu(prev => !prev);
+      setShowTip(false);
+      setWaving(true);
+      setTimeout(() => setWaving(false), 2200);
+    }
   }, []);
 
   const showNextTip = useCallback(() => {
@@ -200,6 +207,9 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
     setMessage(tips[tipIndexRef.current]);
     setShowTip(true);
     setShowMenu(false);
+    setWaving(true);
+    botSpeak(tips[tipIndexRef.current]);
+    setTimeout(() => setWaving(false), 2200);
     setTimeout(() => setShowTip(false), 5000);
   }, [currentPage]);
 
@@ -370,12 +380,16 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
             <animateTransform attributeName="transform" type="rotate" values="-8,18,56;12,18,56;-8,18,56" dur="3s" repeatCount="indefinite" />
           </circle>
         </g>
-        <g>
+        <g key={waving ? "arm-wave" : "arm-idle"}>
           <rect x="50" y="54" width="16" height="4.5" rx="2.2" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="1">
-            <animateTransform attributeName="transform" type="rotate" values="8,52,56;-12,52,56;8,52,56" dur="3.5s" repeatCount="indefinite" />
+            <animateTransform attributeName="transform" type="rotate"
+              values={waving ? "-55,52,56;-95,52,56;-55,52,56" : "8,52,56;-12,52,56;8,52,56"}
+              dur={waving ? "0.45s" : "3.5s"} repeatCount="indefinite" />
           </rect>
-          <circle cx="65" cy="56" r="3" fill="hsl(var(--primary))" opacity="0.4">
-            <animateTransform attributeName="transform" type="rotate" values="8,52,56;-12,52,56;8,52,56" dur="3.5s" repeatCount="indefinite" />
+          <circle cx="65" cy="56" r="3" fill="hsl(var(--primary))" opacity={waving ? 0.75 : 0.4}>
+            <animateTransform attributeName="transform" type="rotate"
+              values={waving ? "-55,52,56;-95,52,56;-55,52,56" : "8,52,56;-12,52,56;8,52,56"}
+              dur={waving ? "0.45s" : "3.5s"} repeatCount="indefinite" />
           </circle>
         </g>
 
