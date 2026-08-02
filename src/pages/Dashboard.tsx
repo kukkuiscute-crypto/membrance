@@ -17,6 +17,8 @@ import ProfilePage from "@/pages/Profile";
 import CalendarPlannerPage from "@/pages/CalendarPlanner";
 import StudyTrackerPage from "@/pages/StudyTracker";
 import StudyHelperPage from "@/pages/StudyHelper";
+import WritingBoardPage from "@/pages/WritingBoard";
+import UpdatesPage from "@/pages/Updates";
 import TrinityPanel from "@/components/TrinityPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +91,8 @@ const Dashboard = () => {
             <Route path="calendar" element={<CalendarPlannerPage />} />
             <Route path="tracker" element={<StudyTrackerPage />} />
             <Route path="helper" element={<StudyHelperPage />} />
+            <Route path="board" element={<WritingBoardPage />} />
+            <Route path="updates" element={<UpdatesPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>

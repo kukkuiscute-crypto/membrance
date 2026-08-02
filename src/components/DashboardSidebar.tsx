@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Trophy, Video, BookOpen, Settings, ChevronLeft, ChevronRight, Shield, PlayCircle, FolderOpen, Users, BarChart3, User, X, Calendar, ClipboardCheck, GraduationCap } from "lucide-react";
+import { Layers, Trophy, Video, BookOpen, Settings, ChevronLeft, ChevronRight, Shield, PlayCircle, FolderOpen, Users, BarChart3, User, X, Calendar, ClipboardCheck, GraduationCap, PenSquare, Rocket } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import RankBadge from "@/components/RankBadge";
@@ -7,6 +7,7 @@ import RankBadge from "@/components/RankBadge";
 const navItems = [
   { icon: BookOpen, label: "Workstation", path: "/dashboard" },
   { icon: Layers, label: "Flashcards", path: "/dashboard/flashcards" },
+  { icon: PenSquare, label: "Writing Board", path: "/dashboard/board", badge: "New" },
   { icon: PlayCircle, label: "Video Hub", path: "/dashboard/videos" },
   { icon: FolderOpen, label: "Your Desk", path: "/dashboard/desk" },
   { icon: Users, label: "Communities", path: "/dashboard/communities" },
@@ -18,6 +19,7 @@ const navItems = [
   { icon: Video, label: "Live Classes", path: "/dashboard/live", badge: "Soon" },
   { icon: Shield, label: "Rankings", path: "/dashboard/rankings" },
   { icon: Calendar, label: "Calendar", path: "/dashboard/calendar" },
+  { icon: Rocket, label: "Updates", path: "/dashboard/updates" },
   { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
