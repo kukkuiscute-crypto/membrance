@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut, Sun, Moon, UserPlus, School, Bot, Download, Apple, Smartphone, Monitor, Globe, Users } from "lucide-react";
+import { User, Palette, Save, Loader2, StickyNote, BookOpen, LogOut, Sun, Moon, UserPlus, School, Bot, Download, Apple, Smartphone, Monitor, Users, Volume2, Hammer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEMES, type ThemeKey } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import PasskeyManager from "@/components/PasskeyManager";
-
-const GITHUB_REPO = "https://github.com/kukkuiscute-crypto/membrance";
+import { isBotVoiceOn, setBotVoice, botSpeak } from "@/lib/botVoice";
+import { APP_VERSION } from "@/lib/changelog";
 
 const Settings = () => {
   const { user, isGuest, profile, refreshProfile } = useAuth();
@@ -20,6 +20,7 @@ const Settings = () => {
   const [noteView, setNoteView] = useState<"sticky" | "book">(() => {
     return (localStorage.getItem("membrance_note_view") as "sticky" | "book") || "sticky";
   });
+  const [botVoice, setBotVoiceState] = useState(isBotVoiceOn());
 
   useEffect(() => {
     if (profile) {
@@ -73,7 +74,7 @@ const Settings = () => {
     <div className="p-8 max-w-2xl mx-auto space-y-8">
       <div>
         <h2 className="font-display text-2xl font-bold text-foreground">Settings</h2>
-        <p className="text-sm text-muted-foreground">Customize your MEMBRANCE experience</p>
+        <p className="text-sm text-muted-foreground">Customize your MEMBRANCE experience · {APP_VERSION}</p>
       </div>
 
       {/* Profile Section */}
