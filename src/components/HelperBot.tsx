@@ -55,6 +55,7 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
   const [lookingAway, setLookingAway] = useState(false);
   const [isStaying, setIsStaying] = useState(false);
   const [popped, setPopped] = useState(false);
+  const [waving, setWaving] = useState(false);
 
   // Pop-in when logged in — fires shortly after auth becomes true
   useEffect(() => {
