@@ -382,10 +382,14 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
         </g>
         <g>
           <rect x="50" y="54" width="16" height="4.5" rx="2.2" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="1">
-            <animateTransform attributeName="transform" type="rotate" values="8,52,56;-12,52,56;8,52,56" dur="3.5s" repeatCount="indefinite" />
+            <animateTransform attributeName="transform" type="rotate"
+              values={waving ? "-55,52,56;-95,52,56;-55,52,56" : "8,52,56;-12,52,56;8,52,56"}
+              dur={waving ? "0.45s" : "3.5s"} repeatCount="indefinite" />
           </rect>
-          <circle cx="65" cy="56" r="3" fill="hsl(var(--primary))" opacity="0.4">
-            <animateTransform attributeName="transform" type="rotate" values="8,52,56;-12,52,56;8,52,56" dur="3.5s" repeatCount="indefinite" />
+          <circle cx="65" cy="56" r="3" fill="hsl(var(--primary))" opacity={waving ? 0.75 : 0.4}>
+            <animateTransform attributeName="transform" type="rotate"
+              values={waving ? "-55,52,56;-95,52,56;-55,52,56" : "8,52,56;-12,52,56;8,52,56"}
+              dur={waving ? "0.45s" : "3.5s"} repeatCount="indefinite" />
           </circle>
         </g>
 
