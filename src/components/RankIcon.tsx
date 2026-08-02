@@ -52,10 +52,33 @@ const RankIcon = memo(({ rank, color, size = 24, className = "" }: RankIconProps
   );
 
   const Aura = ({ id }: { id: string }) => (
-    <circle cx="32" cy="32" r="28" fill={`url(#${gid(`glow${id}`)})`}>
-      <animate attributeName="r" values="24;29;24" dur="3.6s" repeatCount="indefinite" />
-      <animate attributeName="opacity" values="0.6;1;0.6" dur="3.6s" repeatCount="indefinite" />
-    </circle>
+    <g>
+      <circle cx="32" cy="32" r="28" fill={`url(#${gid(`glow${id}`)})`}>
+        <animate attributeName="r" values="24;29;24" dur="3.6s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.6;1;0.6" dur="3.6s" repeatCount="indefinite" />
+      </circle>
+      {/* orbiting halo ring */}
+      <ellipse cx="32" cy="32" rx="29" ry="10" fill="none" stroke={c} strokeWidth="1.1" opacity="0.45">
+        <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="9s" repeatCount="indefinite" />
+      </ellipse>
+      <ellipse cx="32" cy="32" rx="29" ry="10" fill="none" stroke={soft} strokeWidth="2" opacity="0.4">
+        <animateTransform attributeName="transform" type="rotate" from="300 32 32" to="-60 32 32" dur="13s" repeatCount="indefinite" />
+      </ellipse>
+      {/* orbiting spark */}
+      <g>
+        <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="6s" repeatCount="indefinite" />
+        <circle cx="61" cy="32" r="1.7" fill="hsl(0 0% 100%)">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="1.6s" repeatCount="indefinite" />
+        </circle>
+      </g>
+      {/* rising motes */}
+      {[0, 1, 2].map((i) => (
+        <circle key={i} cx={16 + i * 16} cy="56" r="1.1" fill={c} opacity="0">
+          <animate attributeName="cy" values="58;10;58" dur={`${3.2 + i * 0.7}s`} repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0;0.85;0" dur={`${3.2 + i * 0.7}s`} repeatCount="indefinite" />
+        </circle>
+      ))}
+    </g>
   );
 
   switch (rank) {

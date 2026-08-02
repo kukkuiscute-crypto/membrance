@@ -201,54 +201,53 @@ const Settings = () => {
         <p className="text-xs text-muted-foreground mt-2">A friendly bot that flies around and gives you tips while studying</p>
       </motion.div>
 
-      {/* Downloads */}
+      {/* Bot Voice */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.19 }} className="glass rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Volume2 className="w-4 h-4 text-primary" />
+            <h3 className="font-display font-semibold text-foreground">Bot Talks</h3>
+          </div>
+          <button onClick={() => {
+            const next = !botVoice;
+            setBotVoiceState(next);
+            setBotVoice(next);
+            if (next) botSpeak("Hi! I can talk now. Let's study together!", true);
+          }}
+            className={`relative w-12 h-6 rounded-full transition-all ${botVoice ? "bg-primary/30" : "bg-secondary border border-border/50"}`}>
+            <motion.div animate={{ x: botVoice ? 24 : 2 }} className="absolute top-0.5 w-5 h-5 rounded-full bg-primary shadow-lg" />
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">Let the Helper Bot read tips and Writing Board steps out loud.</p>
+      </motion.div>
+
+      {/* Downloads — coming soon */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.20 }} className="glass rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-2">
           <Download className="w-4 h-4 text-primary" />
           <h3 className="font-display font-semibold text-foreground">Download MEMBRANCE App</h3>
+          <span className="ml-auto text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full bg-primary/15 text-primary font-semibold">Coming Soon</span>
         </div>
-
-        {/* WORKING right-now download — served from /public */}
-        <a
-          href={(import.meta.env.BASE_URL || "/") + "MEMBRANCE-web-v1.0.0.zip"}
-          download
-          className="flex items-center gap-3 p-4 mb-4 rounded-xl bg-primary/15 border border-primary/40 text-foreground hover:bg-primary/20 transition-all glow-box"
-        >
-          <Globe className="w-5 h-5 text-primary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold">MEMBRANCE Web v1.0.0 (.zip)</div>
-            <div className="text-[11px] text-muted-foreground">
-              Standalone build · Open <code>index.html</code> after extracting · Works offline · 383 KB
-            </div>
-          </div>
-          <Download className="w-4 h-4 text-primary" />
-        </a>
-
-        <p className="text-xs text-muted-foreground mb-3">
-          Native installers (Windows / macOS / Linux / Android) are built and published via GitHub Releases when a <code>v*</code> tag is pushed.
+        <p className="text-xs text-muted-foreground mb-4">
+          Native apps are being rebuilt for Alpha 2.0. Downloads will unlock here as soon as the installers pass testing.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
-            { label: "Windows x64", icon: Monitor, file: "MEMBRANCE-win32-x64.zip" },
-            { label: "Windows ARM64", icon: Monitor, file: "MEMBRANCE-win32-arm64.zip" },
-            { label: "macOS Intel", icon: Apple, file: "MEMBRANCE-darwin-x64.zip" },
-            { label: "macOS Apple Silicon", icon: Apple, file: "MEMBRANCE-darwin-arm64.zip" },
-            { label: "Linux x64", icon: Monitor, file: "MEMBRANCE-linux-x64.tar.gz" },
-            { label: "Linux ARM64", icon: Monitor, file: "MEMBRANCE-linux-arm64.tar.gz" },
-            { label: "Android APK", icon: Smartphone, file: "MEMBRANCE-android.apk" },
-            { label: "iOS (Coming soon)", icon: Apple, file: null },
+            { label: "Windows", icon: Monitor },
+            { label: "macOS", icon: Apple },
+            { label: "Linux", icon: Monitor },
+            { label: "Android", icon: Smartphone },
+            { label: "iOS", icon: Apple },
+            { label: "Web build", icon: Hammer },
           ].map((d) => (
-            <a key={d.label} href={d.file ? `${GITHUB_REPO}/releases/latest/download/${d.file}` : "#"}
-              onClick={(e) => !d.file && e.preventDefault()}
-              target="_blank" rel="noopener noreferrer"
-              className={`flex items-center gap-2 p-3 rounded-lg text-xs transition-all border ${d.file ? "bg-secondary/40 text-foreground hover:bg-primary/10 hover:border-primary/40 border-border/30" : "bg-secondary/20 text-muted-foreground border-border/20 cursor-not-allowed opacity-60"}`}>
+            <div key={d.label}
+              className="flex items-center gap-2 p-3 rounded-lg text-xs border bg-secondary/20 text-muted-foreground border-border/20 opacity-70">
               <d.icon className="w-4 h-4 shrink-0" />
               <span className="truncate">{d.label}</span>
-            </a>
+              <span className="ml-auto text-[9px] uppercase tracking-wider">soon</span>
+            </div>
           ))}
         </div>
-        <a href={`${GITHUB_REPO}/releases`} target="_blank" rel="noopener noreferrer"
-          className="text-xs text-primary hover:underline mt-3 inline-block">All releases →</a>
       </motion.div>
 
       {/* Passkeys */}
