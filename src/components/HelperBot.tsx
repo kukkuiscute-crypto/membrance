@@ -192,7 +192,12 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
   }, [isPasswordFocused, enabled]);
 
   const handleClick = useCallback(() => {
-    if (!isDraggingRef.current) { setShowMenu(prev => !prev); setShowTip(false); }
+    if (!isDraggingRef.current) {
+      setShowMenu(prev => !prev);
+      setShowTip(false);
+      setWaving(true);
+      setTimeout(() => setWaving(false), 2200);
+    }
   }, []);
 
   const showNextTip = useCallback(() => {
@@ -201,6 +206,9 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
     setMessage(tips[tipIndexRef.current]);
     setShowTip(true);
     setShowMenu(false);
+    setWaving(true);
+    botSpeak(tips[tipIndexRef.current]);
+    setTimeout(() => setWaving(false), 2200);
     setTimeout(() => setShowTip(false), 5000);
   }, [currentPage]);
 
