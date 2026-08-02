@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, MessageCircle, Calculator, FileText, Anchor } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { botSpeak } from "@/lib/botVoice";
 
 interface HelperBotProps {
   currentPage?: string;
