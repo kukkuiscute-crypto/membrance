@@ -380,7 +380,7 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
             <animateTransform attributeName="transform" type="rotate" values="-8,18,56;12,18,56;-8,18,56" dur="3s" repeatCount="indefinite" />
           </circle>
         </g>
-        <g>
+        <g key={waving ? "arm-wave" : "arm-idle"}>
           <rect x="50" y="54" width="16" height="4.5" rx="2.2" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="1">
             <animateTransform attributeName="transform" type="rotate"
               values={waving ? "-55,52,56;-95,52,56;-55,52,56" : "8,52,56;-12,52,56;8,52,56"}
