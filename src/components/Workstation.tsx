@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, BookOpen, Clock, Layers, Trophy, PlayCircle, StickyNote, Target, CheckCircle, X, Zap } from "lucide-react";
+import { Sparkles, BookOpen, Layers, Trophy, PlayCircle, StickyNote, Target, X, Zap, Flame, PenSquare, Timer, Award, TrendingUp, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,6 +63,34 @@ interface WorkstationProps {
   onFinishLesson: () => void;
 }
 
+type Difficulty = "chill" | "focused" | "blitz";
+
+const DIFFICULTY: Record<Difficulty, { label: string; questions: number; seconds: number; multiplier: number; hint: string }> = {
+  chill: { label: "Chill", questions: 5, seconds: 0, multiplier: 1, hint: "No timer · 5 questions" },
+  focused: { label: "Focused", questions: 7, seconds: 20, multiplier: 1.5, hint: "20s per question · 7 questions" },
+  blitz: { label: "Blitz", questions: 10, seconds: 10, multiplier: 2, hint: "10s per question · 10 questions" },
+};
+
+const STREAK_KEY = "membrance_mission_streak";
+
+function readStreak() {
+  try {
+    const raw = localStorage.getItem(STREAK_KEY);
+    if (!raw) return { count: 0, last: "" };
+    return JSON.parse(raw) as { count: number; last: string };
+  } catch { return { count: 0, last: "" }; }
+}
+
+function bumpStreak() {
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  const cur = readStreak();
+  if (cur.last === today) return cur;
+  const next = { count: cur.last === yesterday ? cur.count + 1 : 1, last: today };
+  try { localStorage.setItem(STREAK_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  return next;
+}
+
 const Workstation = ({ onFinishLesson }: WorkstationProps) => {
   const navigate = useNavigate();
   const { profile, isGuest, user } = useAuth();
@@ -80,9 +108,28 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState<number | null>(null);
   const [quizDone, setQuizDone] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>(() => (localStorage.getItem("membrance_quiz_difficulty") as Difficulty) || "focused");
+  const [streak, setStreak] = useState(() => readStreak());
+  const [timeLeft, setTimeLeft] = useState(0);
 
   const watchHistory = JSON.parse(localStorage.getItem("membrance_watch_history") || "[]");
   const videosWatched = watchHistory.length;
+  const cfg = DIFFICULTY[difficulty];
+  const earned = Math.round(score * 5 * cfg.multiplier);
+
+  // Per-question countdown for timed modes.
+  useEffect(() => {
+    if (!quizActive || quizDone || cfg.seconds === 0 || answered !== null) return;
+    setTimeLeft(cfg.seconds);
+    const id = window.setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) { window.clearInterval(id); handleAnswer(-1); return 0; }
+        return t - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizActive, quizDone, currentQ, answered, difficulty]);
 
   const toggleSubject = (s: string) => {
     setSelectedSubjects(prev => {
@@ -99,8 +146,7 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
       const questions = QUIZ_BANK[sub] || [];
       questions.forEach(q => pool.push({ ...q, subject: sub }));
     });
-    // Shuffle and pick 5
-    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 5);
+    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, cfg.questions);
     if (shuffled.length === 0) { toast.error("No questions available"); return; }
     setQuizQuestions(shuffled);
     setCurrentQ(0);
@@ -119,8 +165,8 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
     setTimeout(() => {
       if (currentQ + 1 >= quizQuestions.length) {
         setQuizDone(true);
-        // Award points based on score
-        const pts = (correct ? score + 1 : score) * 5;
+        setStreak(bumpStreak());
+        const pts = Math.round((correct ? score + 1 : score) * 5 * cfg.multiplier);
         if (pts > 0 && user && !isGuest) {
           addQuizPoints(pts);
         }
@@ -128,7 +174,7 @@ const Workstation = ({ onFinishLesson }: WorkstationProps) => {
         setCurrentQ(c => c + 1);
         setAnswered(null);
       }
-    }, 1200);
+    }, 1100);
   };
 
   const addQuizPoints = async (amount: number) => {
