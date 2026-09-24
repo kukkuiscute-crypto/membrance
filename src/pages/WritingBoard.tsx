@@ -1,82 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, Eraser, Lock, Volume2, VolumeX, PenLine } from "lucide-react";
+import { Send, Loader2, Eraser, Lock, Volume2, VolumeX, PenLine, Sparkles, RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { botSpeak, isBotVoiceOn, stopBotSpeech } from "@/lib/botVoice";
+import { botSpeak, isBotVoiceOn, setBotVoice, stopBotSpeech } from "@/lib/botVoice";
+import { streamAiResponse } from "@/lib/aiStream";
+import { Button } from "@/components/ui/button";
 
 const EXAMPLES = ["12 + 47", "3/4 + 5/6", "2x + 5 = 17", "Area of a circle with r = 7", "15% of 240"];
 
-/** Little chalk-holding version of the Helper Bot that lives on the board. */
-const ChalkBot = ({ writing }: { writing: boolean }) => (
-  <svg width="120" height="150" viewBox="0 0 120 150" fill="none" aria-hidden="true" className="drop-shadow-lg">
-    <defs>
-      <linearGradient id="wbBody" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="hsl(var(--card))" />
-        <stop offset="100%" stopColor="hsl(var(--secondary))" />
-      </linearGradient>
-      <radialGradient id="wbGlow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="hsl(var(--primary) / 0.35)" />
-        <stop offset="100%" stopColor="hsl(var(--primary) / 0)" />
-      </radialGradient>
-    </defs>
-
-    <ellipse cx="60" cy="70" rx="52" ry="62" fill="url(#wbGlow)">
-      <animate attributeName="rx" values="48;54;48" dur="4s" repeatCount="indefinite" />
-    </ellipse>
-
-    <g>
-      <animateTransform attributeName="transform" type="translate" values="0 0;0 -5;0 0" dur="3.2s" repeatCount="indefinite" />
-
-      {/* thruster */}
-      <ellipse cx="60" cy="132" rx="14" ry="6" fill="hsl(var(--primary) / 0.55)">
-        <animate attributeName="ry" values="4;8;4" dur="0.35s" repeatCount="indefinite" />
-      </ellipse>
-
-      {/* body */}
-      <rect x="34" y="82" width="52" height="42" rx="20" fill="url(#wbBody)" stroke="hsl(var(--primary) / 0.55)" strokeWidth="1.5" />
-      <rect x="42" y="92" width="36" height="18" rx="6" fill="hsl(var(--primary) / 0.18)" stroke="hsl(var(--primary) / 0.4)" />
-      <text x="60" y="105" textAnchor="middle" fontSize="8" fill="hsl(var(--primary))" fontFamily="monospace" fontWeight="bold">BOT</text>
-
-      {/* chalk arm */}
-      <g>
-        <animateTransform
-          attributeName="transform"
-          type="rotate"
-          values={writing ? "-18 86 92;18 86 92;-6 86 92;-18 86 92" : "-6 86 92;4 86 92;-6 86 92"}
-          dur={writing ? "0.9s" : "3.4s"}
-          repeatCount="indefinite"
-        />
-        <rect x="82" y="89" width="26" height="6" rx="3" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="1.4" />
-        <rect x="106" y="86" width="12" height="11" rx="2.5" fill="hsl(0 0% 96%)" stroke="hsl(0 0% 70%)" />
-      </g>
-
-      {/* left arm */}
-      <rect x="12" y="89" width="24" height="6" rx="3" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="1.4">
-        <animateTransform attributeName="transform" type="rotate" values="6 34 92;-10 34 92;6 34 92" dur="3.8s" repeatCount="indefinite" />
-      </rect>
-
-      {/* head */}
-      <rect x="18" y="18" width="84" height="66" rx="30" fill="url(#wbBody)" stroke="hsl(var(--primary) / 0.55)" strokeWidth="1.5">
-        <animateTransform attributeName="transform" type="rotate" values="-2 60 50;2 60 50;-2 60 50" dur="4.6s" repeatCount="indefinite" />
-      </rect>
-      <circle cx="44" cy="50" r="9" fill="hsl(var(--background))" />
-      <circle cx="76" cy="50" r="9" fill="hsl(var(--background))" />
-      <circle cx="44" cy="50" r="4.5" fill="hsl(var(--primary))">
-        <animate attributeName="r" values="4.5;0.6;4.5" dur="5s" keyTimes="0;0.03;0.06" repeatCount="indefinite" />
-      </circle>
-      <circle cx="76" cy="50" r="4.5" fill="hsl(var(--primary))">
-        <animate attributeName="r" values="4.5;0.6;4.5" dur="5s" keyTimes="0;0.03;0.06" repeatCount="indefinite" />
-      </circle>
-      <path d="M50 66 Q60 74 70 66" stroke="hsl(var(--primary))" strokeWidth="2.4" fill="none" strokeLinecap="round" />
-      <line x1="60" y1="18" x2="60" y2="8" stroke="hsl(var(--primary))" strokeWidth="2" />
-      <circle cx="60" cy="6" r="4" fill="hsl(var(--primary))">
-        <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite" />
-      </circle>
-    </g>
-  </svg>
-);
+type BoardPhase = "idle" | "thinking" | "writing" | "done" | "error";
 
 const WritingBoard = () => {
   const { user, isGuest } = useAuth();
@@ -86,10 +19,17 @@ const WritingBoard = () => {
   const [visible, setVisible] = useState(0);
   const [loading, setLoading] = useState(false);
   const [voice, setVoice] = useState(isBotVoiceOn());
+  const [phase, setPhase] = useState<BoardPhase>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
   const boardRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number>();
 
   const writing = loading || visible < steps.length;
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("membrance:board-state", { detail: { phase, question } }));
+    return () => window.dispatchEvent(new CustomEvent("membrance:board-state", { detail: { phase: "idle", question: "" } }));
+  }, [phase, question]);
 
   // Reveal each chalk line one after another, like real board work.
   useEffect(() => {
@@ -98,6 +38,7 @@ const WritingBoard = () => {
       setVisible((v) => {
         const next = v + 1;
         if (voice && steps[v]) botSpeak(steps[v]);
+        if (next >= steps.length) setPhase("done");
         return next;
       });
       boardRef.current?.scrollTo({ top: boardRef.current.scrollHeight, behavior: "smooth" });
@@ -113,31 +54,33 @@ const WritingBoard = () => {
     if (!isLoggedIn) { toast.error("Sign in with a username to use the AI board"); return; }
     stopBotSpeech();
     setLoading(true);
+    setPhase("thinking");
+    setErrorMessage("");
     setSteps([]);
     setVisible(0);
     try {
-      const { data, error } = await supabase.functions.invoke("amber-ai", {
-        body: {
-          messages: [{
-            role: "user",
-            content:
-              `You are writing on a classroom chalkboard. Explain how to solve "${q}" step by step for a school student. ` +
-              `Reply with ONLY numbered short lines (max 12 words each), starting with "Step 1:". End with a final line "Answer: ...".`,
-          }],
-        },
-      });
-      if (error) throw error;
-      const text: string = data?.reply || data?.choices?.[0]?.message?.content || "";
+      const text = await streamAiResponse("amber-ai", [{
+        role: "user",
+        content:
+          `Solve this for a school student: ${q}\n` +
+          `Return only short chalkboard lines. Begin each explanation line with "Step 1:", "Step 2:", and so on. ` +
+          `Keep each line under 14 words and finish with "Answer: ...".`,
+      }]);
       const lines = text
         .split("\n")
         .map((l) => l.replace(/^[*\-•]\s*/, "").replace(/[*#`]/g, "").trim())
         .filter(Boolean);
       if (!lines.length) throw new Error("empty");
       setSteps(lines);
-    } catch {
-      toast.error("The bot couldn't reach the chalkboard. Try again.");
+      setPhase("writing");
+    } catch (error) {
+      const safeMessage = error instanceof Error ? error.message : "The Helper Bot could not finish this answer.";
+      setErrorMessage(safeMessage);
+      setPhase("error");
+      toast.error(safeMessage);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [isLoggedIn]);
 
   const clearBoard = () => {
@@ -145,6 +88,8 @@ const WritingBoard = () => {
     setSteps([]);
     setVisible(0);
     setQuestion("");
+    setErrorMessage("");
+    setPhase("idle");
   };
 
   if (!isLoggedIn) {
@@ -160,48 +105,36 @@ const WritingBoard = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-5">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-5" data-writing-board>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl md:text-4xl font-bold text-gradient">AI Writing Board</h1>
           <p className="text-sm text-muted-foreground mt-1">Ask anything — the Helper Bot grabs a chalk and works it out step by step.</p>
         </div>
-        <button
-          onClick={() => { const v = !voice; setVoice(v); if (!v) stopBotSpeech(); }}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
-            voice ? "bg-primary/15 text-primary border-primary/40" : "bg-secondary/40 text-muted-foreground border-border/30"
-          }`}
-        >
+        <Button variant="outline" size="sm" onClick={() => { const v = !voice; setVoice(v); setBotVoice(v); if (!v) stopBotSpeech(); }} className={voice ? "text-primary border-primary/40 bg-primary/10" : "text-muted-foreground"}>
           {voice ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           {voice ? "Bot reads aloud" : "Silent bot"}
-        </button>
+        </Button>
       </div>
 
       {/* Board */}
-      <div className="relative rounded-[26px] p-3 md:p-4"
-        style={{ background: "linear-gradient(160deg, hsl(30 25% 26%), hsl(28 30% 18%))", boxShadow: "0 26px 60px -28px hsl(var(--glow) / 0.6)" }}>
+      <div className="relative rounded-2xl border border-primary/20 bg-card/70 p-2 md:p-3 shadow-2xl">
         <div
           ref={boardRef}
-          className="relative rounded-2xl overflow-y-auto min-h-[320px] md:min-h-[420px] max-h-[55vh] p-6 md:p-9"
-          style={{
-            background: "radial-gradient(120% 120% at 30% 20%, hsl(155 22% 20%), hsl(155 25% 12%))",
-            boxShadow: "inset 0 0 70px hsl(0 0% 0% / 0.55)",
-          }}
+          className="writing-board-surface relative rounded-xl overflow-y-auto min-h-[340px] md:min-h-[440px] max-h-[58vh] p-6 md:p-10"
         >
-          <div className="pointer-events-none absolute inset-0 opacity-[0.07]"
-            style={{ backgroundImage: "repeating-linear-gradient(115deg, hsl(0 0% 100%) 0 1px, transparent 1px 26px)" }} />
+          <div className="writing-board-grain pointer-events-none absolute inset-0" />
 
           {steps.length === 0 && !loading && (
             <div className="relative text-center py-10">
-              <p className="font-display text-2xl md:text-3xl" style={{ color: "hsl(0 0% 95% / 0.9)" }}>Board is clean ✏️</p>
-              <p className="text-sm mt-2" style={{ color: "hsl(0 0% 90% / 0.55)" }}>Try one of these:</p>
+              <Sparkles className="w-8 h-8 text-board-foreground/70 mx-auto mb-3" />
+              <p className="font-display text-2xl md:text-3xl text-board-foreground">Ready for a problem</p>
+              <p className="text-sm mt-2 text-board-muted">Choose an example or write your own.</p>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {EXAMPLES.map((ex) => (
-                  <button key={ex} onClick={() => { setQuestion(ex); solve(ex); }}
-                    className="px-3 py-1.5 rounded-full text-xs border transition-colors"
-                    style={{ color: "hsl(0 0% 95% / 0.85)", borderColor: "hsl(0 0% 100% / 0.25)" }}>
+                  <Button key={ex} variant="outline" size="sm" onClick={() => { setQuestion(ex); solve(ex); }} className="h-8 border-board-foreground/20 bg-board-foreground/5 text-board-foreground hover:bg-board-foreground/10 hover:text-board-foreground">
                     {ex}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -215,22 +148,17 @@ const WritingBoard = () => {
                   initial={{ opacity: 0, x: -14, filter: "blur(4px)" }}
                   animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                   transition={{ duration: 0.35 }}
-                  className="font-display text-lg md:text-2xl leading-relaxed"
-                  style={{ color: /^answer/i.test(line) ? "hsl(48 95% 72%)" : "hsl(0 0% 96% / 0.92)", textShadow: "0 0 12px hsl(0 0% 100% / 0.25)" }}
+                  className={`font-display text-lg md:text-2xl leading-relaxed ${/^answer/i.test(line) ? "text-board-answer" : "text-board-foreground"}`}
                 >
                   {line}
                 </motion.p>
               ))}
             </AnimatePresence>
             {(loading || visible < steps.length) && (
-              <span className="inline-block w-6 h-1.5 rounded-full animate-pulse" style={{ background: "hsl(0 0% 100% / 0.7)" }} />
+              <div className="flex items-center gap-2 text-board-muted text-sm"><Loader2 className="w-4 h-4 animate-spin" /> {loading ? "Thinking through it…" : "Writing the next step…"}</div>
             )}
           </div>
-
-          {/* chalk tray bot */}
-          <div className="pointer-events-none absolute right-1 bottom-0 hidden sm:block">
-            <ChalkBot writing={writing} />
-          </div>
+          {errorMessage && <div className="relative mt-6 max-w-xl rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-board-foreground">{errorMessage}</div>}
         </div>
       </div>
 
@@ -247,14 +175,12 @@ const WritingBoard = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button onClick={() => solve(question)} disabled={loading}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold glow-box disabled:opacity-60">
+          <Button onClick={() => solve(question)} disabled={loading} className="h-12 px-5 glow-box">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Ask the Bot
-          </button>
-          <button onClick={clearBoard}
-            className="flex items-center gap-2 px-4 py-3 rounded-xl border border-border/50 text-muted-foreground text-sm hover:text-foreground">
-            <Eraser className="w-4 h-4" /> Wipe
-          </button>
+          </Button>
+          <Button onClick={phase === "error" ? () => solve(question) : clearBoard} variant="outline" className="h-12 px-4">
+            {phase === "error" ? <RotateCcw className="w-4 h-4" /> : <Eraser className="w-4 h-4" />} {phase === "error" ? "Retry" : "Wipe"}
+          </Button>
         </div>
       </div>
     </div>
