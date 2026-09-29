@@ -24,11 +24,9 @@ const WritingBoard = () => {
   const boardRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number>();
 
-  const writing = loading || visible < steps.length;
-
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("membrance:board-state", { detail: { phase, question } }));
-    return () => window.dispatchEvent(new CustomEvent("membrance:board-state", { detail: { phase: "idle", question: "" } }));
+    return () => { window.dispatchEvent(new CustomEvent("membrance:board-state", { detail: { phase: "idle", question: "" } })); };
   }, [phase, question]);
 
   // Reveal each chalk line one after another, like real board work.

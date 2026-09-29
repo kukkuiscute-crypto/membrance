@@ -2,8 +2,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Camera, Highlighter, Key, MessageSquare, Send, Loader2, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { streamAiResponse } from "@/lib/aiStream";
+import { Button } from "@/components/ui/button";
 
 const StudyHelper = () => {
   const { user, isGuest } = useAuth();
@@ -19,19 +20,16 @@ const StudyHelper = () => {
     if (!isLoggedIn) { toast.error("Sign in to use Study Helper"); return; }
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("amber-ai", {
-        body: { messages: [{ role: "user", content: prompt }] },
-      });
-      if (error) throw error;
-      const text = data?.reply || data?.choices?.[0]?.message?.content || "No response";
+      const text = await streamAiResponse("amber-ai", [{ role: "user", content: prompt }], (_delta, fullText) => setResponse(fullText));
       setResponse(text);
       // Extract keypoints from bullet points
       const lines = text.split("\n").filter((l: string) => l.trim().startsWith("-") || l.trim().startsWith("•") || l.trim().match(/^\d+\./));
       if (lines.length > 0) setKeypoints(lines.map((l: string) => l.replace(/^[-•\d.]+\s*/, "").trim()));
-    } catch (err: any) {
-      toast.error("Failed to get response");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to get response");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleRevise = () => {
@@ -68,14 +66,14 @@ const StudyHelper = () => {
 
       {/* Mode toggle */}
       <div className="flex gap-2 mb-6">
-        <button onClick={() => setMode("revise")}
+        <Button variant="outline" onClick={() => setMode("revise")}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all ${mode === "revise" ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
           <Highlighter className="w-3.5 h-3.5" /> Revise & Keypoints
-        </button>
-        <button onClick={() => setMode("quiz")}
+        </Button>
+        <Button variant="outline" onClick={() => setMode("quiz")}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all ${mode === "quiz" ? "bg-primary/15 text-primary neon-border-active" : "bg-secondary/40 text-muted-foreground border border-border/30"}`}>
           <MessageSquare className="w-3.5 h-3.5" /> Quick Quiz
-        </button>
+        </Button>
       </div>
 
       {/* Input */}
@@ -93,12 +91,14 @@ const StudyHelper = () => {
             <Camera className="w-3 h-3" /> Tip: You can also screenshot a page and describe what's on it
           </p>
         </div>
+        <Button asChild className="mt-3 w-full h-12" disabled={loading}>
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
           onClick={mode === "revise" ? handleRevise : handleQuiz} disabled={loading}
-          className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm disabled:opacity-50">
+          className="flex items-center justify-center gap-2 font-semibold text-sm">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           {loading ? "Thinking..." : mode === "revise" ? "Get Key Points & Summary" : "Generate Quiz"}
         </motion.button>
+        </Button>
       </div>
 
       {/* Response */}

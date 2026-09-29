@@ -3,6 +3,7 @@ import { Send, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { streamAiResponse } from "@/lib/aiStream";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -30,73 +31,16 @@ const AIChatPanel = ({ functionName, placeholder }: AIChatPanelProps) => {
     setInput("");
     setLoading(true);
 
-    let assistantSoFar = "";
-    const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
-
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error("You must be signed in to use AI chat");
-        setLoading(false);
-        return;
-      }
-
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ messages: allMessages }),
+      await streamAiResponse(functionName, allMessages, (_delta, fullText) => {
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant") return prev.map((message, index) => index === prev.length - 1 ? { ...message, content: fullText } : message);
+          return [...prev, { role: "assistant", content: fullText }];
+        });
       });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || `Error ${resp.status}`);
-      }
-
-      if (!resp.body) throw new Error("No response stream");
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantSoFar += content;
-              setMessages((prev) => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
-                  return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
-                }
-                return [...prev, { role: "assistant", content: assistantSoFar }];
-              });
-            }
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
-        }
-      }
-    } catch (e: any) {
-      toast.error(e.message || "Failed to get AI response");
-      console.error(e);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to get AI response");
     } finally {
       setLoading(false);
     }
