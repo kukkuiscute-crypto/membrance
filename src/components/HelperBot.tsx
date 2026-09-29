@@ -10,6 +10,8 @@ interface HelperBotProps {
   isPasswordFocused?: boolean;
 }
 
+type BoardPhase = "idle" | "thinking" | "writing" | "done" | "error";
+
 const TIPS: Record<string, string[]> = {
   auth: [
     "Welcome! Enter a username and password to sign up or log in.",
@@ -57,6 +59,8 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
   const [isStaying, setIsStaying] = useState(false);
   const [popped, setPopped] = useState(false);
   const [waving, setWaving] = useState(false);
+  const [boardPhase, setBoardPhase] = useState<BoardPhase>("idle");
+  const boardMode = boardPhase !== "idle";
 
   // Pop-in when logged in — fires shortly after auth becomes true
   useEffect(() => {
@@ -82,10 +86,30 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
   const tipIndexRef = useRef(0);
   const lastPageRef = useRef(currentPage);
   const dragStartRef = useRef({ x: 0, y: 0, px: 0, py: 0 });
+  const boardModeRef = useRef(false);
 
   // Keep refs in sync with state
   isStayingRef.current = isStaying;
   lookingAwayRef.current = lookingAway;
+  boardModeRef.current = boardMode;
+
+  useEffect(() => {
+    const onBoardState = (event: Event) => {
+      const detail = (event as CustomEvent<{ phase?: BoardPhase }>).detail;
+      const nextPhase = detail?.phase ?? "idle";
+      setBoardPhase(nextPhase);
+      if (nextPhase === "idle") return;
+      const board = document.querySelector<HTMLElement>("[data-writing-board] .writing-board-surface");
+      if (!board) return;
+      const rect = board.getBoundingClientRect();
+      targetRef.current = {
+        x: Math.max(8, Math.min(window.innerWidth - 78, rect.right - 86)),
+        y: Math.max(8, Math.min(window.innerHeight - 106, rect.top + Math.min(150, rect.height * 0.32))),
+      };
+    };
+    window.addEventListener("membrance:board-state", onBoardState);
+    return () => window.removeEventListener("membrance:board-state", onBoardState);
+  }, []);
 
   // Mouse tracking — passive, no state
   useEffect(() => {
@@ -96,17 +120,17 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
 
   // Random flight targets
   useEffect(() => {
-    if (!enabled || isStaying) return;
+    if (!enabled || isStaying || boardMode) return;
     const updateTarget = () => {
       targetRef.current = {
-        x: 60 + Math.random() * (window.innerWidth - 120),
-        y: 60 + Math.random() * (window.innerHeight - 140),
+        x: 8 + Math.random() * Math.max(1, window.innerWidth - 86),
+        y: 8 + Math.random() * Math.max(1, window.innerHeight - 114),
       };
     };
     updateTarget();
     const interval = setInterval(updateTarget, 6000 + Math.random() * 4000);
     return () => clearInterval(interval);
-  }, [enabled, isStaying]);
+  }, [enabled, isStaying, boardMode]);
 
   // Single rAF loop — all DOM updates via refs, no setState
   useEffect(() => {
@@ -117,10 +141,12 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
       const target = targetRef.current;
 
       // Lerp position
-      if (!isStayingRef.current && !isDraggingRef.current) {
+      if ((!isStayingRef.current || boardModeRef.current) && !isDraggingRef.current) {
         pos.x += (target.x - pos.x) * 0.008;
         pos.y += (target.y - pos.y) * 0.008;
       }
+      pos.x = Math.max(4, Math.min(window.innerWidth - 74, pos.x));
+      pos.y = Math.max(4, Math.min(window.innerHeight - 100, pos.y));
 
       // Apply transform directly to DOM
       if (botElRef.current) {
@@ -229,6 +255,8 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
     if (!isDraggingRef.current) return;
     posRef.current.x = dragStartRef.current.px + (e.clientX - dragStartRef.current.x);
     posRef.current.y = dragStartRef.current.py + (e.clientY - dragStartRef.current.y);
+    posRef.current.x = Math.max(4, Math.min(window.innerWidth - 74, posRef.current.x));
+    posRef.current.y = Math.max(4, Math.min(window.innerHeight - 100, posRef.current.y));
   };
   const onPointerUp = () => {
     isDraggingRef.current = false;
@@ -263,6 +291,7 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
       onClick={handleClick}
     >
       <div
@@ -276,11 +305,11 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
       >
       {/* Tip bubble */}
       <AnimatePresence>
-        {showTip && !showMenu && (
+        {(showTip || boardMode) && !showMenu && (
           <motion.div initial={{ opacity: 0, scale: 0.8, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8, y: 8 }}
             className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-[220px] pointer-events-none">
             <div className="bg-card/95 backdrop-blur-md rounded-lg px-3 py-2 text-xs text-foreground border border-primary/20 shadow-lg">
-              {message}
+               {boardMode ? (boardPhase === "thinking" ? "Let me work through this…" : boardPhase === "writing" ? "Here comes the next step!" : boardPhase === "done" ? "All done — check each step." : boardPhase === "error" ? "I hit a snag. Your question is still here." : message) : message}
             </div>
           </motion.div>
         )}
@@ -330,7 +359,7 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
             <stop offset="100%" stopColor="hsl(var(--primary) / 0.08)" />
           </radialGradient>
           <radialGradient id="thrusterGrad" cx="50%" cy="0%" r="100%">
-            <stop offset="0%" stopColor="white" stopOpacity="0.9" />
+            <stop offset="0%" stopColor="hsl(var(--primary-foreground))" stopOpacity="0.9" />
             <stop offset="35%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
             <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
           </radialGradient>
@@ -355,7 +384,7 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
             <animate attributeName="ry" values="4;7;4" dur="0.35s" repeatCount="indefinite" />
             <animate attributeName="opacity" values="0.6;1;0.6" dur="0.35s" repeatCount="indefinite" />
           </ellipse>
-          <ellipse cx="35" cy="86" rx="5" ry="2.5" fill="white" opacity="0.7">
+          <ellipse cx="35" cy="86" rx="5" ry="2.5" fill="hsl(var(--primary-foreground))" opacity="0.7">
             <animate attributeName="ry" values="1.5;3;1.5" dur="0.3s" repeatCount="indefinite" />
           </ellipse>
         </g>
@@ -369,7 +398,7 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
         <rect x="17" y="49" width="36" height="30" rx="14" fill="url(#bodyGrad)" stroke="hsl(var(--primary) / 0.55)" strokeWidth="1" />
         {/* Screen */}
         <rect x="22" y="55" width="26" height="13" rx="4" fill="url(#screenGrad)" stroke="hsl(var(--primary) / 0.4)" strokeWidth="0.6" />
-        <text x="35" y="64" textAnchor="middle" fontSize="6" fill="hsl(var(--primary))" fontFamily="monospace" fontWeight="bold" letterSpacing="1">BOT</text>
+        <text x="35" y="64" textAnchor="middle" fontSize="6" fill="hsl(var(--primary))" fontFamily="monospace" fontWeight="bold" letterSpacing="1">{boardMode ? "MATH" : "BOT"}</text>
 
         {/* Arms */}
         <g>
@@ -380,17 +409,18 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
             <animateTransform attributeName="transform" type="rotate" values="-8,18,56;12,18,56;-8,18,56" dur="3s" repeatCount="indefinite" />
           </circle>
         </g>
-        <g key={waving ? "arm-wave" : "arm-idle"}>
+        <g key={boardMode ? `board-${boardPhase}` : waving ? "arm-wave" : "arm-idle"}>
           <rect x="50" y="54" width="16" height="4.5" rx="2.2" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="1">
             <animateTransform attributeName="transform" type="rotate"
-              values={waving ? "-55,52,56;-95,52,56;-55,52,56" : "8,52,56;-12,52,56;8,52,56"}
-              dur={waving ? "0.45s" : "3.5s"} repeatCount="indefinite" />
+              values={boardMode ? "-24,52,56;-38,52,56;-24,52,56" : waving ? "-55,52,56;-95,52,56;-55,52,56" : "8,52,56;-12,52,56;8,52,56"}
+              dur={boardMode ? (boardPhase === "writing" ? "0.55s" : "1.8s") : waving ? "0.45s" : "3.5s"} repeatCount="indefinite" />
           </rect>
           <circle cx="65" cy="56" r="3" fill="hsl(var(--primary))" opacity={waving ? 0.75 : 0.4}>
             <animateTransform attributeName="transform" type="rotate"
-              values={waving ? "-55,52,56;-95,52,56;-55,52,56" : "8,52,56;-12,52,56;8,52,56"}
-              dur={waving ? "0.45s" : "3.5s"} repeatCount="indefinite" />
+              values={boardMode ? "-24,52,56;-38,52,56;-24,52,56" : waving ? "-55,52,56;-95,52,56;-55,52,56" : "8,52,56;-12,52,56;8,52,56"}
+              dur={boardMode ? (boardPhase === "writing" ? "0.55s" : "1.8s") : waving ? "0.45s" : "3.5s"} repeatCount="indefinite" />
           </circle>
+          {boardMode && <rect x="63" y="53.8" width="10" height="2.2" rx="1" fill="hsl(var(--board-foreground))" stroke="hsl(var(--board-muted))" strokeWidth="0.5" />}
         </g>
 
         {/* Head — softer, sleeker */}
@@ -413,23 +443,15 @@ const HelperBot = ({ currentPage = "default", isPasswordFocused = false }: Helpe
         <ellipse cx="24" cy="22" rx="8" ry="9" fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth="0.8">
           <animateTransform attributeName="transform" type="rotate" values="-2,35,26;2,35,26;-2,35,26" dur="4s" repeatCount="indefinite" />
         </ellipse>
-        <circle ref={leftPupilRef} cx="24" cy="22" r="3.5" fill="hsl(var(--primary))">
-          <animateTransform attributeName="transform" type="rotate" values="-2,35,26;2,35,26;-2,35,26" dur="4s" repeatCount="indefinite" />
-        </circle>
-        <circle ref={leftHighlightRef} cx="23" cy="21" r="1.2" fill="white" opacity="0.85">
-          <animateTransform attributeName="transform" type="rotate" values="-2,35,26;2,35,26;-2,35,26" dur="4s" repeatCount="indefinite" />
-        </circle>
+        <circle ref={leftPupilRef} cx="24" cy="22" r="3.5" fill="hsl(var(--primary))" />
+        <circle ref={leftHighlightRef} cx="23" cy="21" r="1.2" fill="hsl(var(--primary-foreground))" opacity="0.85" />
 
         {/* Right eye */}
         <ellipse cx="46" cy="22" rx="8" ry="9" fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth="0.8">
           <animateTransform attributeName="transform" type="rotate" values="-2,35,26;2,35,26;-2,35,26" dur="4s" repeatCount="indefinite" />
         </ellipse>
-        <circle ref={rightPupilRef} cx="46" cy="22" r="3.5" fill="hsl(var(--primary))">
-          <animateTransform attributeName="transform" type="rotate" values="-2,35,26;2,35,26;-2,35,26" dur="4s" repeatCount="indefinite" />
-        </circle>
-        <circle ref={rightHighlightRef} cx="45" cy="21" r="1.2" fill="white" opacity="0.85">
-          <animateTransform attributeName="transform" type="rotate" values="-2,35,26;2,35,26;-2,35,26" dur="4s" repeatCount="indefinite" />
-        </circle>
+        <circle ref={rightPupilRef} cx="46" cy="22" r="3.5" fill="hsl(var(--primary))" />
+        <circle ref={rightHighlightRef} cx="45" cy="21" r="1.2" fill="hsl(var(--primary-foreground))" opacity="0.85" />
 
         {/* Blink */}
         <rect x="14" y="14" width="22" height="18" rx="8" fill="hsl(var(--card))" opacity="0">
