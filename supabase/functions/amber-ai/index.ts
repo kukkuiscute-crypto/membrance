@@ -1,13 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { parseMessages, requestAiStream } from "../_shared/ai-responses.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     // Authenticate the user
@@ -18,9 +15,12 @@ serve(async (req) => {
       });
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !anonKey) throw new Error("Authentication is not configured");
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      supabaseUrl,
+      anonKey,
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -31,22 +31,13 @@ serve(async (req) => {
       });
     }
 
-    const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const body = await req.json().catch(() => null) as { messages?: unknown } | null;
+    const messages = parseMessages(body?.messages);
+    if (!messages) return new Response(JSON.stringify({ error: "Send 1–50 valid chat messages." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!apiKey) throw new Error("Lovable AI is not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `You are AMBER, a warm, witty, and deeply caring K-12 study companion on the MEMBRANCE platform. You talk like a smart older sibling — casual but knowledgeable, encouraging but real. You use humor, relatable analogies, and genuine enthusiasm.
+    const response = await requestAiStream(req, apiKey, `You are AMBER, a warm, witty, and deeply caring K-12 study companion on the MEMBRANCE platform. You talk like a smart older sibling — casual but knowledgeable, encouraging but real. You use humor, relatable analogies, and genuine enthusiasm.
 
 Personality:
 - Warm and conversational — say things like "Okay so here's the deal..." or "Ngl this topic is actually kinda cool once you get it"
@@ -64,34 +55,17 @@ Rules:
 - Use real-world examples ("Think of fractions like slicing a pizza...")
 - Format responses clearly with bullet points, numbered steps, and bold key terms
 - Keep responses focused but thorough — don't ramble
-- If you don't know something, say so honestly`,
-          },
-          ...messages,
-        ],
-        stream: true,
-      }),
-    });
+- If you don't know something, say so honestly`, messages);
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI usage limit reached. Please add credits." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const payload = await response.text();
+      let message = `Lovable AI request failed (${response.status})`;
+      try { message = (JSON.parse(payload) as { message?: string; error?: { message?: string } }).message || (JSON.parse(payload) as { error?: { message?: string } }).error?.message || message; } catch { /* keep safe fallback */ }
+      return new Response(JSON.stringify({ error: message }), { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", ...(response.headers.get("X-Lovable-AIG-Run-ID") ? { "X-Lovable-AIG-Run-ID": response.headers.get("X-Lovable-AIG-Run-ID") as string } : {}) },
     });
   } catch (e) {
     console.error("amber-ai error:", e);
